@@ -1,40 +1,61 @@
-<script>
-  const { useState } = React;
-  const { createRoot } = ReactDOM;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>chapTAP Autofix</title>
 
-  function App() {
-    const [issue, setIssue] = useState("");
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-    return React.createElement(
-      "div",
-      { className: "min-h-screen flex items-center justify-center" },
-      React.createElement(
+  <!-- React 18 (UMD) -->
+  <script defer crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script defer crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+
+<body class="bg-gray-100">
+  <div id="root"></div>
+
+  <!-- App Script -->
+  <script defer>
+    const { useState } = React;
+    const { createRoot } = ReactDOM;
+
+    function App() {
+      const [issue, setIssue] = useState("");
+
+      return React.createElement(
         "div",
-        { className: "bg-white p-6 rounded-2xl shadow-lg w-full max-w-md" },
+        { className: "min-h-screen flex items-center justify-center" },
         React.createElement(
-          "h1",
-          { className: "text-2xl font-bold mb-4 text-center" },
-          "chapTAP Autofix"
-        ),
-        React.createElement("input", {
-          className: "w-full border rounded-lg p-2 mb-4",
-          placeholder: "Describe the issue...",
-          value: issue,
-          onChange: (e) => setIssue(e.target.value),
-        }),
-        React.createElement(
-          "button",
-          {
-            className:
-              "w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700",
-            onClick: () => alert(`Issue submitted: ${issue}`),
-          },
-          "Submit"
+          "div",
+          { className: "bg-white p-6 rounded-2xl shadow-lg w-full max-w-md" },
+          React.createElement(
+            "h1",
+            { className: "text-2xl font-bold mb-4 text-center" },
+            "chapTAP Autofix"
+          ),
+          React.createElement("input", {
+            className: "w-full border rounded-lg p-2 mb-4",
+            placeholder: "Describe the issue...",
+            value: issue,
+            onChange: (e) => setIssue(e.target.value),
+          }),
+          React.createElement(
+            "button",
+            {
+              className:
+                "w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700",
+              onClick: () => alert(`Issue submitted: ${issue}`),
+            },
+            "Submit"
+          )
         )
-      )
-    );
-  }
+      );
+    }
 
-  const root = createRoot(document.getElementById("root"));
-  root.render(React.createElement(App));
-</script>
+    const root = createRoot(document.getElementById("root"));
+    root.render(React.createElement(App));
+  </script>
+</body>
+</html>
