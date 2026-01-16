@@ -1,58 +1,280 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>chapTAP Autofix</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- React 18 (UMD) - REMOVED defer -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="chapTAP Autofix - Fast roadside assistance in Kenya">
+  <title>chapTAP Autofix - Roadside Assistance Kenya</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100">
+<body>
   <div id="root"></div>
-  <!-- App Script - REMOVED defer -->
-  <script>
-    const { useState } = React;
-    const { createRoot } = ReactDOM;
+  
+  <script type="text/babel">
+    const { useState, useEffect } = React;
     
-    function App() {
-      const [issue, setIssue] = useState("");
-      
-      return React.createElement(
-        "div",
-        { className: "min-h-screen flex items-center justify-center" },
-        React.createElement(
-          "div",
-          { className: "bg-white p-6 rounded-2xl shadow-lg w-full max-w-md" },
-          React.createElement(
-            "h1",
-            { className: "text-2xl font-bold mb-4 text-center" },
-            "chapTAP Autofix"
-          ),
-          React.createElement("input", {
-            className: "w-full border rounded-lg p-2 mb-4",
-            placeholder: "Describe the issue...",
-            value: issue,
-            onChange: (e) => setIssue(e.target.value),
-          }),
-          React.createElement(
-            "button",
-            {
-              className:
-                "w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700",
-              onClick: () => alert(`Issue submitted: ${issue}`)  // FIXED: template literal syntax
-            },
-            "Submit"
-          )
-        )
+    // Import icons as simple components
+    const MapPin = ({ size = 24, className = "" }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
+    const Phone = ({ size = 24, className = "" }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
+    const Star = ({ size = 24, className = "" }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
+    const MessageCircle = ({ size = 24, className = "" }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>;
+    const Wrench = ({ size = 24, className = "" }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>;
+    const Battery = ({ size = 24, className = "" }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/></svg>;
+    const Fuel = ({ size = 24, className = "" }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="22" x2="15" y2="22"/><line x1="4" y1="9" x2="14" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/></svg>;
+    const Car = ({ size = 24, className = "" }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>;
+    const Bell = ({ size = 24, className = "" }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>;
+    const Navigation = ({ size = 24, className = "" }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>;
+    const TrendingUp = ({ size = 24, className = "" }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
+    const Users = ({ size = 24, className = "" }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+    const X = ({ size = 24, className = "" }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+
+    const ChapTapAutofix = () => {
+      const [userType, setUserType] = useState('driver');
+      const [currentView, setCurrentView] = useState('home');
+      const [manualLocation, setManualLocation] = useState('');
+      const [selectedIssue, setSelectedIssue] = useState('');
+      const [requests, setRequests] = useState([]);
+      const [providers, setProviders] = useState([]);
+      const [shops, setShops] = useState([]);
+      const [notifications, setNotifications] = useState([]);
+      const [showNotifications, setShowNotifications] = useState(false);
+      const [userLocation, setUserLocation] = useState(null);
+
+      useEffect(() => {
+        setProviders([
+          { id: 1, name: 'Mike Garage', phone: '0721122334', services: ['Towing', 'Tyre'], location: 'Nyali', lat: -4.0435, lng: 39.6682, rating: 4.5, status: 'Approved', available: true, verified: true },
+          { id: 2, name: 'Quick Fix Auto', phone: '0733445566', services: ['Battery', 'Engine'], location: 'Mombasa CBD', lat: -4.0559, lng: 39.6630, rating: 4.3, status: 'Approved', available: true, verified: true }
+        ]);
+        setShops([
+          { id: 1, name: 'Mombasa Oils Centre', location: 'Nyali', type: 'Lubricants', products: 'Engine Oil, Brake Fluid', phone: '0712345678', rating: 4.5 }
+        ]);
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition((pos) => {
+            setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          });
+        }
+      }, []);
+
+      const addNotif = (msg) => setNotifications([{ id: Date.now(), message: msg, timestamp: new Date().toLocaleString() }, ...notifications]);
+
+      const requestHelp = () => {
+        if (!selectedIssue || !manualLocation) { 
+          alert('Please select an issue and describe your location'); 
+          return; 
+        }
+        const req = { id: requests.length + 1, issue: selectedIssue, location: manualLocation, timestamp: new Date().toLocaleString(), status: 'Open' };
+        setRequests([...requests, req]);
+        addNotif('Request submitted: ' + selectedIssue);
+        setManualLocation('');
+        setSelectedIssue('');
+        setCurrentView('providers');
+        setTimeout(() => alert('✅ Request submitted!\n\nNearby providers are now visible. You can call or WhatsApp them directly.'), 100);
+      };
+
+      const issueTypes = [
+        { id: 'tyre', name: 'Flat Tyre', Icon: Car },
+        { id: 'battery', name: 'Battery', Icon: Battery },
+        { id: 'towing', name: 'Towing', Icon: Wrench },
+        { id: 'fuel', name: 'Fuel', Icon: Fuel }
+      ];
+
+      return (
+        <div className="min-h-screen bg-gray-50">
+          <div className="max-w-md mx-auto bg-gray-50 min-h-screen pb-20">
+            <div className="bg-white border-b sticky top-0 z-10">
+              <div className="flex">
+                <button onClick={() => { setUserType('driver'); setCurrentView('home'); }} className={'flex-1 py-4 font-semibold ' + (userType === 'driver' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500')}>Driver</button>
+                <button onClick={() => { setUserType('admin'); setCurrentView('admin'); }} className={'flex-1 py-4 font-semibold ' + (userType === 'admin' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500')}>Admin</button>
+                <button onClick={() => setShowNotifications(true)} className="px-4 py-4 relative">
+                  <Bell size={20} />
+                  {notifications.length > 0 && <span className="absolute top-2 right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{notifications.length}</span>}
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4">
+              {userType === 'driver' && currentView === 'home' && (
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg">
+                    <h1 className="text-2xl font-bold mb-2">chapTAP Autofix</h1>
+                    <p className="text-blue-100">Fast. Reliable. Just a Tap Away.</p>
+                    {userLocation && <div className="mt-2 text-xs bg-blue-600 bg-opacity-50 rounded px-2 py-1 inline-flex items-center gap-1"><Navigation size={12} />GPS Active</div>}
+                  </div>
+                  
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <button onClick={() => setCurrentView('request')} className="w-full bg-red-500 text-white py-4 rounded-lg font-bold text-lg hover:bg-red-600 mb-3">🚨 Request Emergency Help</button>
+                    <button onClick={() => setCurrentView('providers')} className="w-full bg-blue-500 text-white py-3 rounded-lg font-bold hover:bg-blue-600">Find Service Providers</button>
+                  </div>
+
+                  {requests.length > 0 && (
+                    <div className="bg-white rounded-lg shadow p-6">
+                      <h3 className="font-bold text-lg mb-3">Your Requests</h3>
+                      {requests.map(r => (
+                        <div key={r.id} className="border-b py-3 last:border-b-0">
+                          <div className="flex justify-between">
+                            <div>
+                              <div className="font-semibold">{r.issue}</div>
+                              <div className="text-sm text-gray-600">{r.location}</div>
+                            </div>
+                            <span className="px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-800">{r.status}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {userType === 'driver' && currentView === 'request' && (
+                <div className="space-y-4">
+                  <button onClick={() => setCurrentView('home')} className="text-blue-500 flex items-center gap-1">← Back to Home</button>
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h2 className="text-xl font-bold mb-4">Request Roadside Help</h2>
+                    {userLocation && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm mb-4">
+                        <div className="flex items-center gap-2 text-green-800">
+                          <Navigation size={16} />
+                          <span className="font-semibold">GPS Location Detected</span>
+                        </div>
+                        <div className="text-xs text-green-600 mt-1">{userLocation.lat.toFixed(6)}, {userLocation.lng.toFixed(6)}</div>
+                      </div>
+                    )}
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block font-semibold mb-2">What's the problem? *</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          {issueTypes.map(({id, name, Icon}) => (
+                            <button key={id} onClick={() => setSelectedIssue(name)} className={'p-3 border-2 rounded-lg flex flex-col items-center transition-all ' + (selectedIssue === name ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-blue-300')}>
+                              <Icon size={24} className="mb-1" />
+                              <span className="text-sm font-medium">{name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block font-semibold mb-2">
+                          <MapPin className="inline mr-1" size={16} />
+                          Describe Your Location *
+                        </label>
+                        <textarea value={manualLocation} onChange={(e) => setManualLocation(e.target.value)} placeholder="Example: Near Shell Station, Mombasa Road opposite Java House..." className="w-full border-2 border-gray-300 rounded-lg p-3 focus:border-blue-500 outline-none" rows="3" />
+                        <p className="text-xs text-gray-500 mt-1">Be as specific as possible - include landmarks</p>
+                      </div>
+                      <button onClick={requestHelp} disabled={!selectedIssue || !manualLocation} className="w-full bg-blue-500 text-white py-3 rounded-lg font-bold hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        {!selectedIssue || !manualLocation ? 'Please fill all fields' : '✓ Submit Request'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {userType === 'driver' && currentView === 'providers' && (
+                <div className="space-y-4">
+                  <button onClick={() => setCurrentView('home')} className="text-blue-500">← Back</button>
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h2 className="text-xl font-bold mb-4">Available Service Providers</h2>
+                    {providers.filter(p => p.status === 'Approved').map(p => (
+                      <div key={p.id} className="border-b py-4 last:border-b-0">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <div className="font-bold text-lg flex items-center gap-2">
+                              {p.name}
+                              {p.verified && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded">✓</span>}
+                            </div>
+                            <div className="text-sm text-gray-600">{p.location}</div>
+                            <div className="text-sm text-gray-600">{p.services.join(', ')}</div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Star size={16} className="text-yellow-400 fill-yellow-400" />
+                            <span className="font-semibold">{p.rating}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mb-2">
+                          <span className="px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-800">🟢 Available</span>
+                          <button onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`, '_blank')} className="px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800">📍 Map</button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <a href={`tel:${p.phone}`} className="bg-blue-500 text-white py-2 rounded-lg text-center text-sm flex items-center justify-center gap-1">
+                            <Phone size={14} />Call
+                          </a>
+                          <a href={`https://wa.me/${p.phone.replace(/^0/, '254')}`} target="_blank" rel="noopener noreferrer" className="bg-green-500 text-white py-2 rounded-lg text-center text-sm flex items-center justify-center gap-1">
+                            <MessageCircle size={14} />WhatsApp
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {userType === 'admin' && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-r from-gray-700 to-gray-800 text-white p-6 rounded-lg">
+                    <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
+                      <TrendingUp className="text-blue-500" size={32} />
+                      <div>
+                        <div className="text-2xl font-bold">{requests.length}</div>
+                        <div className="text-sm text-gray-600">Requests</div>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
+                      <Users className="text-green-500" size={32} />
+                      <div>
+                        <div className="text-2xl font-bold">{providers.length}</div>
+                        <div className="text-sm text-gray-600">Providers</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {showNotifications && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 z-50" onClick={() => setShowNotifications(false)}>
+                <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-lg" onClick={(e) => e.stopPropagation()}>
+                  <div className="p-4 border-b flex justify-between items-center">
+                    <h3 className="font-bold text-lg">Notifications</h3>
+                    <button onClick={() => setShowNotifications(false)}><X size={24} /></button>
+                  </div>
+                  <div className="overflow-y-auto h-[calc(100vh-64px)]">
+                    {notifications.length === 0 ? (
+                      <div className="text-center text-gray-500 mt-8">
+                        <Bell size={48} className="mx-auto mb-2 text-gray-300" />
+                        <p>No notifications</p>
+                      </div>
+                    ) : (
+                      notifications.map(n => (
+                        <div key={n.id} className="border-b p-4">
+                          <div className="flex items-start gap-3">
+                            <Bell size={20} className="text-blue-500 mt-1" />
+                            <div>
+                              <p className="text-sm">{n.message}</p>
+                              <p className="text-xs text-gray-400 mt-1">{n.timestamp}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-white border-t p-4 text-center text-sm text-gray-600 fixed bottom-0 left-0 right-0 max-w-md mx-auto">
+              <p className="font-semibold">chapTAP Autofix MVP</p>
+              <p className="text-xs">📞 support@chaptap.co.ke</p>
+            </div>
+          </div>
+        </div>
       );
-    }
-    
-    const root = createRoot(document.getElementById("root"));
-    root.render(React.createElement(App));
+    };
+
+    ReactDOM.render(<ChapTapAutofix />, document.getElementById('root'));
   </script>
 </body>
 </html>
-
