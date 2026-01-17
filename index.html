@@ -1,586 +1,239 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="chapTAP Autofix - Premium roadside assistance in Kenya" />
-  <title>chapTAP Autofix - Premium Roadside Assistance Kenya</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>chapTAP Autofix</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100">
-  <div id="root"></div>
-  <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+<div id="root"></div>
 
-    // ICONS
-    const Phone = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3.26 5.18 2 2 0 0 1 5.11 2h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-      </svg>
-    );
-    const MessageCircle = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-      </svg>
-    );
-    const Star = ({ size = 16, filled = true }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-        <polygon points="12 2 15 8 22 9 17 14 18 21 12 18 6 21 7 14 2 9 9 8 12 2"/>
-      </svg>
-    );
-    const MapPin = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-        <circle cx="12" cy="10" r="3"/>
-      </svg>
-    );
-    const AlertCircle = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="12"/>
-        <line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-    );
-    const X = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <line x1="18" y1="6" x2="6" y2="18"/>
-        <line x1="6" y1="6" x2="18" y2="18"/>
-      </svg>
-    );
-    const Navigation = ({ size = 16 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polygon points="3 11 22 2 13 21 11 13 3 11"/>
-      </svg>
-    );
-    const Send = ({ size = 20 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <line x1="22" y1="2" x2="11" y2="13"/>
-        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-      </svg>
-    );
-    const Bell = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-      </svg>
-    );
-    const Upload = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="17 8 12 3 7 8"/>
-        <line x1="12" y1="3" x2="12" y2="15"/>
-      </svg>
-    );
-    const Check = ({ size = 20 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polyline points="20 6 9 17 4 12"/>
-      </svg>
-    );
-    const TrendingUp = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-        <polyline points="17 6 23 6 23 12"/>
-      </svg>
-    );
-    const Users = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-      </svg>
-    );
-    const DollarSign = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <line x1="12" y1="1" x2="12" y2="23"/>
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-      </svg>
-    );
-    const Wrench = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-      </svg>
-    );
-    const ToggleRight = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="1" y="5" width="22" height="14" rx="7" ry="7"/>
-        <circle cx="16" cy="12" r="3"/>
-      </svg>
-    );
-    const ToggleLeft = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="1" y="5" width="22" height="14" rx="7" ry="7"/>
-        <circle cx="8" cy="12" r="3"/>
-      </svg>
-    );
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
 
-    // LOCAL STORAGE UTILITIES
-    const storage = {
-      get: (key) => {
-        try {
-          const item = localStorage.getItem(key);
-          return item ? JSON.parse(item) : null;
-        } catch (e) {
-          return null;
-        }
-      },
-      set: (key, value) => {
-        try {
-          localStorage.setItem(key, JSON.stringify(value));
-        } catch (e) {
-          console.error('Storage error:', e);
-        }
-      }
-    };
+// ICONS
+const Bell = ({size=24}) => <span style={{fontSize:size}}>🔔</span>;
+const AlertCircle = ({size=24}) => <span style={{fontSize:size}}>🚨</span>;
+const X = ({size=24}) => <span style={{fontSize:size}}>❌</span>;
+const Send = ({size=24}) => <span style={{fontSize:size}}>📤</span>;
 
-    // MAIN APP
-    const ChapTapAutofix = () => {
-      const [userType, setUserType] = useState('user');
-      const [currentView, setCurrentView] = useState('home');
-      const [providers, setProviders] = useState([]);
-      const [shops, setShops] = useState([]);
-      const [requests, setRequests] = useState([]);
-      const [ratings, setRatings] = useState([]);
-      const [chats, setChats] = useState({});
-      const [notifications, setNotifications] = useState([]);
-      const [location, setLocation] = useState(null);
-      const [gpsActive, setGpsActive] = useState(false);
-      const [showEmergencyModal, setShowEmergencyModal] = useState(false);
-      const [showAdminAuth, setShowAdminAuth] = useState(false);
-      const [showProviderAuth, setShowProviderAuth] = useState(false);
-      const [adminPin, setAdminPin] = useState('');
-      const [providerPhone, setProviderPhone] = useState('');
-      const [showNotifications, setShowNotifications] = useState(false);
-      const [selectedProvider, setSelectedProvider] = useState(null);
-      const [showChat, setShowChat] = useState(false);
-      const [showRating, setShowRating] = useState(false);
-      const [selectedRequest, setSelectedRequest] = useState(null);
-      const [currentProviderId, setCurrentProviderId] = useState(null);
+// STORAGE
+const storage = {
+  get: (key) => { try { return JSON.parse(localStorage.getItem(key)) || null; } catch { return null; } },
+  set: (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)) } catch(e) { console.error(e); } }
+};
 
-      // Emergency request form
-      const [emergencyForm, setEmergencyForm] = useState({
-        issue: '',
-        locationType: 'roadside',
-        locationDesc: '',
-        files: []
-      });
-
-      // Provider registration form
-      const [providerForm, setProviderForm] = useState({
-        name: '', phone: '', services: [], experience: '', idNumber: '', location: ''
-      });
-
-      // Load data on mount
-      useEffect(() => {
-        const savedProviders = storage.get('providers') || [
-          { id:1, name:'Mike Garage', phone:'0721122334', services:['Towing','Tyre'], location:'Nyali', rating:4.5, status:'Approved', available: true },
-          { id:2, name:'Quick Fix Auto', phone:'0733445566', services:['Battery'], location:'CBD', rating:4.3, status:'Approved', available: true },
-          { id:3, name:'Roadside Rescue', phone:'0744556677', services:['Towing','Mechanical'], location:'Likoni', rating:4.7, status:'Approved', available: false }
-        ];
-        setProviders(savedProviders);
-
-        const savedShops = storage.get('shops') || [
-          { id:1, name:'Mombasa Oils Centre', location:'Nyali', type:'Lubricants', products:'Engine Oil, Brake Fluid', phone:'0712345678', rating:4.5 },
-          { id:2, name:'AutoSpare Hub', location:'Changamwe', type:'Parts', products:'Belts, Plugs', phone:'0721987654', rating:4.3 },
-          { id:3, name:'Tyre World', location:'CBD', type:'Tyres', products:'All Tyre Brands', phone:'0733221100', rating:4.6 }
-        ];
-        setShops(savedShops);
-
-        setRequests(storage.get('requests') || []);
-        setRatings(storage.get('ratings') || []);
-        setChats(storage.get('chats') || {});
-        setNotifications(storage.get('notifications') || []);
-
-        requestLocation();
-      }, []);
-
-      // Save data on changes
-      useEffect(() => { storage.set('providers', providers); }, [providers]);
-      useEffect(() => { storage.set('requests', requests); }, [requests]);
-      useEffect(() => { storage.set('ratings', ratings); }, [ratings]);
-      useEffect(() => { storage.set('chats', chats); }, [chats]);
-      useEffect(() => { storage.set('notifications', notifications); }, [notifications]);
-
-      const requestLocation = () => {
-        if (navigator.geolocation) {
-          setGpsActive(true);
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              setLocation({
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-                accuracy: position.coords.accuracy
-              });
-            },
-            () => setGpsActive(false)
-          );
-        }
-      };
-
-      const addNotification = (message, type = 'info') => {
-        const newNotif = { id: Date.now(), message, type, timestamp: new Date().toLocaleString() };
-        setNotifications(prev => [newNotif, ...prev]);
-      };
-
-      const handleEmergencySubmit = () => {
-        if (!emergencyForm.issue || !emergencyForm.locationDesc) {
-          alert('Please fill all required fields');
-          return;
-        }
-
-        const newRequest = {
-          id: Date.now(),
-          ...emergencyForm,
-          location: location,
-          status: 'Open',
-          paymentStatus: 'Pending',
-          timestamp: new Date().toLocaleString(),
-          driverName: 'Current User'
-        };
-
-        setRequests(prev => [newRequest, ...prev]);
-        addNotification('Emergency request submitted!', 'success');
-        setShowEmergencyModal(false);
-        setEmergencyForm({ issue: '', locationType: 'roadside', locationDesc: '', files: [] });
-      };
-
-      const handleFileUpload = (e) => {
-        const files = Array.from(e.target.files);
-        setEmergencyForm(prev => ({ ...prev, files: files.map(f => f.name) }));
-      };
-
-      const handleProviderRegistration = () => {
-        if (!providerForm.name || !providerForm.phone || providerForm.services.length === 0) {
-          alert('Please fill all required fields');
-          return;
-        }
-
-        const newProvider = {
-          id: Date.now(),
-          ...providerForm,
-          status: 'Pending',
-          rating: 0,
-          available: false
-        };
-
-        setProviders(prev => [...prev, newProvider]);
-        addNotification('Registration submitted for approval', 'info');
-        setCurrentView('home');
-        setProviderForm({ name: '', phone: '', services: [], experience: '', idNumber: '', location: '' });
-      };
-
-      const toggleService = (service) => {
-        setProviderForm(prev => ({
-          ...prev,
-          services: prev.services.includes(service)
-            ? prev.services.filter(s => s !== service)
-            : [...prev.services, service]
-        }));
-      };
-
-      const approveProvider = (id) => {
-        setProviders(prev => prev.map(p => p.id === id ? { ...p, status: 'Approved', available: true } : p));
-        addNotification('Provider approved successfully', 'success');
-      };
-
-      const rejectProvider = (id) => {
-        setProviders(prev => prev.map(p => p.id === id ? { ...p, status: 'Rejected' } : p));
-        addNotification('Provider rejected', 'error');
-      };
-
-      const sendMessage = (providerId, text) => {
-        const chatKey = `chat_${providerId}`;
-        const newMessage = { sender: 'user', text, timestamp: new Date().toLocaleTimeString() };
-        setChats(prev => ({
-          ...prev,
-          [chatKey]: [...(prev[chatKey] || []), newMessage]
-        }));
-      };
-
-      const submitRating = (requestId, rating, comment) => {
-        const newRating = { id: Date.now(), requestId, rating, comment };
-        setRatings(prev => [...prev, newRating]);
-        setShowRating(false);
-        setSelectedRequest(null);
-        addNotification('Rating submitted', 'success');
-      };
-
-      const handleAdminAccess = () => {
-        if (adminPin === '1234') {
-          addNotification('Admin access granted', 'success');
-          setShowAdminAuth(false);
-          setAdminPin('');
-        } else {
-          alert('Incorrect PIN');
-        }
-      };
-
-      const handleProviderLogin = () => {
-        const prov = providers.find(p => p.phone === providerPhone);
-        if (prov) {
-          addNotification(`Welcome, ${prov.name}`, 'success');
-          setSelectedProvider(prov);
-          setShowProviderAuth(false);
-        } else {
-          alert('Provider not found');
-        }
-      };
-
-      return (
-        <div className="min-h-screen relative bg-gray-100">
-          <header className="bg-gradient-to-r from-black via-gray-900 to-black p-4 text-white flex justify-between items-center shadow-xl">
-            <h1 className="font-black text-lg">⚫🟡 chapTAP Autofix</h1>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setShowNotifications(!showNotifications)}>
-                <Bell />
-              </button>
-              <button onClick={() => setShowEmergencyModal(true)}>Emergency</button>
-            </div>
-          </header>
-
-          {/* Notifications */}
-          {showNotifications && (
-            <div className="absolute top-16 right-4 w-80 bg-white rounded-lg shadow-xl p-4 z-50">
-              <h3 className="font-bold mb-2">Notifications</h3>
-              {notifications.length === 0 ? (
-                <p className="text-sm text-gray-500">No notifications yet</p>
-              ) : (
-                notifications.map(n => (
-                  <div key={n.id} className="text-xs p-2 border-b border-gray-200">
-                    <p className="font-semibold">{n.type.toUpperCase()}</p>
-                    <p>{n.message}</p>
-                    <p className="text-gray-400">{n.timestamp}</p>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {/* EMERGENCY MODAL */}
-          {showEmergencyModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-                {/* ...rest of emergency modal content remains the same */}
-              </div>
-            </div>
-          )}
-
-          {/* CHAT MODAL */}
-          {showChat && selectedProvider && (
-            <ChatModal
-              provider={selectedProvider}
-              messages={chats[`chat_${selectedProvider.id}`] || []}
-              onClose={() => { setShowChat(false); setSelectedProvider(null); }}
-              onSend={(msg) => sendMessage(selectedProvider.id, msg)}
-            />
-          )}
-
-          {/* RATING MODAL */}
-          {showRating && selectedRequest && (
-            <RatingModal
-              request={selectedRequest}
-              onClose={() => { setShowRating(false); setSelectedRequest(null); }}
-              onSubmit={submitRating}
-            />
-          )}
-
-          {/* ADMIN AUTH MODAL */}
-          {showAdminAuth && (
-            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl">
-                <h3 className="text-xl font-black text-gray-800 mb-4">Admin Access</h3>
-                <input
-                  type="password"
-                  placeholder="Enter PIN (default: 1234)"
-                  value={adminPin}
-                  onChange={e => setAdminPin(e.target.value)}
-                  className="w-full p-3 border rounded-lg mb-4"
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={handleAdminAccess} className="bg-blue-600 text-white py-2 rounded-lg font-bold">
-                    Login
-                  </button>
-                  <button onClick={() => { setShowAdminAuth(false); setAdminPin(''); }} className="bg-gray-300 text-gray-700 py-2 rounded-lg font-bold">
-                    Cancel
-                  </button>
+// CHAT MODAL
+const ChatModal = ({ provider, messages, onClose, onSend }) => {
+  const [message, setMessage] = useState('');
+  const messagesEndRef = useRef(null);
+  useEffect(()=>{ messagesEndRef.current?.scrollIntoView({behavior:'smooth'}) }, [messages]);
+  const handleSend = () => { if(message.trim()){ onSend(message); setMessage(''); } };
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full h-[600px] flex flex-col shadow-2xl">
+        <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-4 rounded-t-2xl flex justify-between items-center">
+          <div>
+            <h3 className="font-bold text-white">{provider.name}</h3>
+            <p className="text-xs text-purple-100">{provider.services.join(', ')}</p>
+          </div>
+          <button onClick={onClose} className="text-white"><X size={24}/></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {messages.length===0 ? <p className="text-center text-gray-400 mt-8">No messages yet</p> :
+            messages.map((msg, idx)=>(
+              <div key={idx} className={`flex ${msg.sender==='user'?'justify-end':'justify-start'}`}>
+                <div className={`max-w-[70%] p-3 rounded-lg ${msg.sender==='user'?'bg-purple-600 text-white':'bg-gray-200 text-gray-800'}`}>
+                  <p className="text-sm">{msg.text}</p>
+                  <p className="text-xs mt-1 opacity-70">{msg.timestamp}</p>
                 </div>
               </div>
-            </div>
-          )}
+            ))
+          }
+          <div ref={messagesEndRef}></div>
+        </div>
+        <div className="p-4 flex gap-2">
+          <input type="text" placeholder="Type a message..." value={message} onChange={e=>setMessage(e.target.value)} className="flex-1 p-3 border rounded-xl"/>
+          <button onClick={handleSend} className="bg-purple-600 text-white px-4 py-3 rounded-xl flex items-center"><Send/></button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-          {/* PROVIDER AUTH MODAL */}
-          {showProviderAuth && (
-            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl">
-                <h3 className="text-xl font-black text-gray-800 mb-4">Provider Login</h3>
-                <p className="text-sm text-gray-600 mb-4">Enter your registered phone number</p>
-                <input
-                  type="tel"
-                  placeholder="Phone Number (e.g., 0721122334)"
-                  value={providerPhone}
-                  onChange={e => setProviderPhone(e.target.value)}
-                  className="w-full p-3 border rounded-lg mb-4"
-                />
-                <div className="bg-blue-50 p-3 rounded-lg mb-4">
-                  <p className="text-xs text-blue-800"><strong>Test Providers:</strong></p>
-                  <p className="text-xs text-blue-700">• 0721122334 (Mike Garage)</p>
-                  <p className="text-xs text-blue-700">• 0733445566 (Quick Fix Auto)</p>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={handleProviderLogin} className="bg-green-600 text-white py-2 rounded-lg font-bold">
-                    Login
-                  </button>
-                  <button onClick={() => { setShowProviderAuth(false); setProviderPhone(''); }} className="bg-gray-300 text-gray-700 py-2 rounded-lg font-bold">
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+// RATING MODAL
+const RatingModal = ({ request, onClose, onSubmit }) => {
+  const [rating,setRating] = useState(5);
+  const [comment,setComment] = useState('');
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+        <h3 className="font-bold text-lg mb-4">Rate your service</h3>
+        <p className="mb-2">Request: {request.issue}</p>
+        <input type="number" min="1" max="5" value={rating} onChange={e=>setRating(e.target.value)} className="w-full p-3 border rounded-lg mb-2" placeholder="Rating 1-5"/>
+        <textarea value={comment} onChange={e=>setComment(e.target.value)} className="w-full p-3 border rounded-lg mb-4" placeholder="Comment (optional)"/>
+        <div className="flex justify-between">
+          <button onClick={()=>onSubmit(request.id,rating,comment)} className="bg-purple-600 text-white px-4 py-2 rounded-lg">Submit</button>
+          <button onClick={onClose} className="bg-gray-300 px-4 py-2 rounded-lg">Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-          {/* FOOTER */}
-          <div className="bg-gradient-to-r from-black via-gray-900 to-black border-t-4 border-yellow-500 p-4 text-center fixed bottom-0 left-0 right-0 max-w-md mx-auto shadow-2xl">
-            <p className="font-black tracking-wider text-yellow-400 text-lg">⚫🟡 chapTAP Autofix</p>
-            <p className="text-xs text-yellow-200 mt-1">📞 support@chaptapautofix.co.ke | Premium Roadside Help</p>
+// MAIN APP
+const ChapTapAutofix = () => {
+  const [userType,setUserType]=useState('user');
+  const [currentView,setCurrentView]=useState('home');
+  const [providers,setProviders]=useState([]);
+  const [shops,setShops]=useState([]);
+  const [requests,setRequests]=useState([]);
+  const [chats,setChats]=useState({});
+  const [notifications,setNotifications]=useState([]);
+  const [location,setLocation]=useState(null);
+  const [gpsActive,setGpsActive]=useState(false);
+  const [showEmergencyModal,setShowEmergencyModal]=useState(false);
+  const [showNotifications,setShowNotifications]=useState(false);
+  const [selectedProvider,setSelectedProvider]=useState(null);
+  const [showChat,setShowChat]=useState(false);
+  const [showRating,setShowRating]=useState(false);
+  const [selectedRequest,setSelectedRequest]=useState(null);
+  const [emergencyForm,setEmergencyForm]=useState({issue:'',locationType:'roadside',locationDesc:'',files:[]});
+  const [providerForm,setProviderForm]=useState({name:'',phone:'',services:[],experience:'',idNumber:'',location:''});
+
+  useEffect(()=>{
+    setProviders(storage.get('providers')||[
+      {id:1,name:'Mike Garage',phone:'0721122334',services:['Towing','Tyre'],location:'Nyali',rating:4.5,status:'Approved',available:true},
+      {id:2,name:'Quick Fix Auto',phone:'0733445566',services:['Battery'],location:'CBD',rating:4.3,status:'Approved',available:true}
+    ]);
+    setShops(storage.get('shops')||[
+      {id:1,name:'Mombasa Oils Centre',location:'Nyali',type:'Lubricants',products:'Engine Oil, Brake Fluid',phone:'0712345678',rating:4.5},
+      {id:2,name:'AutoSpare Hub',location:'Changamwe',type:'Parts',products:'Belts, Plugs',phone:'0721987654',rating:4.3}
+    ]);
+    setRequests(storage.get('requests')||[]);
+    setChats(storage.get('chats')||{});
+    setNotifications(storage.get('notifications')||[]);
+    requestLocation();
+  },[]);
+
+  useEffect(()=>{storage.set('providers',providers)},[providers]);
+  useEffect(()=>{storage.set('requests',requests)},[requests]);
+  useEffect(()=>{storage.set('chats',chats)},[chats]);
+  useEffect(()=>{storage.set('notifications',notifications)},[notifications]);
+
+  const requestLocation=()=>{
+    if(!navigator.geolocation){setGpsActive(false);return;}
+    setGpsActive(true);
+    navigator.geolocation.getCurrentPosition(pos=>setLocation({lat:pos.coords.latitude,lng:pos.coords.longitude}), ()=>setGpsActive(false));
+  };
+
+  const addNotification=(message,type='info')=>{
+    setNotifications(prev=>[{id:Date.now(),message,type,timestamp:new Date().toLocaleString()},...prev]);
+  };
+
+  const handleEmergencySubmit=()=>{
+    if(!emergencyForm.issue || !emergencyForm.locationDesc){alert('Fill required fields');return;}
+    const newRequest={id:Date.now(),...emergencyForm,location,status:'Open',timestamp:new Date().toLocaleString(),driverName:'Current User'};
+    setRequests(prev=>[newRequest,...prev]);
+    addNotification('Emergency request submitted!','success');
+    setShowEmergencyModal(false);
+    setEmergencyForm({issue:'',locationType:'roadside',locationDesc:'',files:[]});
+  };
+  const handleFileUpload=(e)=>{setEmergencyForm(prev=>({...prev,files:Array.from(e.target.files).map(f=>f.name)}))};
+
+  const toggleService=(service)=>{setProviderForm(prev=>({...prev,services:prev.services.includes(service)?prev.services.filter(s=>s!==service):[...prev.services,service]}))};
+  const handleProviderRegistration=()=>{
+    if(!providerForm.name || !providerForm.phone || providerForm.services.length===0){alert('Fill all fields');return;}
+    setProviders(prev=>[...prev,{id:Date.now(),...providerForm,status:'Pending',rating:0,available:false}]);
+    addNotification('Registration submitted for approval','info');
+    setCurrentView('home');setProviderForm({name:'',phone:'',services:[],experience:'',idNumber:'',location:''});
+  };
+
+  const sendMessage=(providerId,text)=>{
+    const key=`chat_${providerId}`;
+    const newMsg={sender:'user',text,timestamp:new Date().toLocaleTimeString()};
+    setChats(prev=>({...prev,[key]:[...(prev[key]||[]),newMsg]}));
+  };
+
+  const submitRating=(requestId,rating,comment)=>{
+    addNotification('Rating submitted','success');
+    setShowRating(false);
+    setSelectedRequest(null);
+  };
+
+  return (
+    <div className="min-h-screen relative bg-gray-100">
+      {/* HEADER */}
+      <header className="bg-gradient-to-r from-black via-gray-900 to-black p-4 text-white flex justify-between items-center shadow-xl">
+        <h1 className="font-black text-lg">⚫🟡 chapTAP Autofix</h1>
+        <div className="flex items-center gap-2">
+          <button onClick={()=>setShowNotifications(!showNotifications)}><Bell/></button>
+          <button onClick={()=>setShowEmergencyModal(true)} className="bg-red-600 px-3 py-1 rounded-lg font-bold hover:bg-red-700">Emergency</button>
+        </div>
+      </header>
+
+      {/* NOTIFICATIONS */}
+      {showNotifications && <div className="absolute top-16 right-4 w-80 bg-white rounded-lg shadow-xl p-4 z-50">
+        <h3 className="font-bold mb-2">Notifications</h3>
+        {notifications.length===0 ? <p className="text-sm text-gray-500">No notifications yet</p> : notifications.map(n=>(
+          <div key={n.id} className="text-xs p-2 border-b border-gray-200">
+            <p className="font-semibold">{n.type.toUpperCase()}</p>
+            <p>{n.message}</p>
+            <p className="text-gray-400">{n.timestamp}</p>
+          </div>
+        ))}
+      </div>}
+
+      {/* VIEWS */}
+      {currentView==='home' && (
+        <div className="p-4 space-y-4 max-w-md mx-auto mt-4">
+          <div className="flex justify-center gap-2 mb-4">
+            <button onClick={()=>setUserType('user')} className={`px-6 py-2 rounded-lg font-bold ${userType==='user'?'bg-yellow-500 text-black':'bg-gray-700 text-white'}`}>User</button>
+            <button onClick={()=>setUserType('admin')} className={`px-6 py-2 rounded-lg font-bold ${userType==='admin'?'bg-gray-800 text-white':'bg-gray-700 text-white'}`}>Admin</button>
+          </div>
+          <div className="flex flex-col gap-4">
+            <button onClick={()=>setShowEmergencyModal(true)} className="w-full bg-red-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2"><AlertCircle size={20}/> EMERGENCY HELP</button>
+            <button onClick={()=>setCurrentView('providers')} className="w-full bg-black text-yellow-400 py-4 rounded-xl font-bold hover:bg-gray-900 flex items-center justify-center gap-2">⚫🟡 Find Service Providers</button>
+            <button onClick={()=>setCurrentView('shops')} className="w-full bg-yellow-500 text-black py-4 rounded-xl font-bold hover:bg-yellow-600 flex items-center justify-center gap-2">🟡 Browse Auto Shops</button>
+            <button onClick={()=>setCurrentView('providerRegistration')} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700">Register as Service Provider</button>
+            <button onClick={()=>setCurrentView('requests')} className="w-full bg-purple-600 text-white py-4 rounded-xl font-bold hover:bg-purple-700 flex justify-between items-center px-4">My Request History <span className="bg-purple-800 px-2 py-1 rounded-full text-xs">{requests.length}</span></button>
           </div>
         </div>
-      );
-    };
+      )}
 
-    // CHAT MODAL COMPONENT
-    const ChatModal = ({ provider, messages, onClose, onSend }) => {
-      const [message, setMessage] = useState('');
-      const messagesEndRef = useRef(null);
-
-      useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, [messages]);
-
-      const handleSend = () => {
-        if (message.trim()) {
-          onSend(message);
-          setMessage('');
-        }
-      };
-
-      return (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full h-[600px] flex flex-col shadow-2xl">
-            <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-4 rounded-t-2xl flex justify-between items-center">
-              <div>
-                <h3 className="font-bold text-white">{provider.name}</h3>
-                <p className="text-xs text-purple-100">{provider.services.join(', ')}</p>
-              </div>
-              <button onClick={onClose} className="text-white">
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {messages.length === 0 ? (
-                <p className="text-center text-gray-400 mt-8">No messages yet. Start the conversation!</p>
-              ) : (
-                messages.map((msg, idx) => (
-                  <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[70%] p-3 rounded-lg ${msg.sender === 'user' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-800'}`}>
-                      <p className="text-sm">{msg.text}</p>
-                      <p className="text-xs mt-1 opacity-70">{msg.timestamp}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            <div className="p-4 border-t flex gap-2">
-              <input
-                type="text"
-                value={message}
-                onChange={e => setMessage(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSend()} {/* corrected from onKeyPress */}
-                placeholder="Type a message..."
-                className="flex-1 p-3 border rounded-lg"
-              />
-              <button onClick={handleSend} className="bg-purple-600 text-white p-3 rounded-lg">
-                <Send size={20} />
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    };
-
-    // RATING MODAL COMPONENT
-    const RatingModal = ({ request, onClose, onSubmit }) => {
-      const [rating, setRating] = useState(0);
-      const [comment, setComment] = useState('');
-
-      const handleSubmit = () => {
-        if (rating === 0) {
-          alert('Please select a rating');
-          return;
-        }
-        onSubmit(request.id, rating, comment);
-      };
-
-      return (
+      {/* MODALS */}
+      {showEmergencyModal && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-black text-gray-800">Rate Service</h3>
-              <button onClick={onClose} className="text-gray-500">
-                <X size={24} />
-              </button>
+            <h3 className="font-bold text-lg mb-4">Emergency Help</h3>
+            <input type="text" placeholder="Issue" value={emergencyForm.issue} onChange={e=>setEmergencyForm({...emergencyForm,issue:e.target.value})} className="w-full p-3 border rounded-lg mb-2"/>
+            <input type="text" placeholder="Location Description" value={emergencyForm.locationDesc} onChange={e=>setEmergencyForm({...emergencyForm,locationDesc:e.target.value})} className="w-full p-3 border rounded-lg mb-2"/>
+            <input type="file" multiple onChange={e=>setEmergencyForm({...emergencyForm,files:Array.from(e.target.files).map(f=>f.name)})} className="mb-2"/>
+            <div className="flex justify-between mt-4">
+              <button onClick={handleEmergencySubmit} className="bg-red-600 text-white px-4 py-2 rounded-lg">Submit</button>
+              <button onClick={()=>setShowEmergencyModal(false)} className="bg-gray-300 px-4 py-2 rounded-lg">Cancel</button>
             </div>
-
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">Request: {request.issue}</p>
-              <p className="text-xs text-gray-500">{request.timestamp}</p>
-            </div>
-
-            <div className="mb-4">
-              <p className="font-bold mb-2">How was the service?</p>
-              <div className="flex gap-2 justify-center">
-                {[1, 2, 3, 4, 5].map(star => (
-                  <button
-                    key={star}
-                    onClick={() => setRating(star)}
-                    className={`text-3xl ${rating >= star ? 'text-yellow-500' : 'text-gray-300'}`}
-                  >
-                    ★
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="block font-bold mb-2">Comments (Optional)</label>
-              <textarea
-                value={comment}
-                onChange={e => setComment(e.target.value)}
-                placeholder="Share your experience..."
-                className="w-full p-3 border rounded-lg"
-                rows="3"
-              />
-            </div>
-
-            <button
-              onClick={handleSubmit}
-              className="w-full bg-yellow-500 text-black py-3 rounded-lg font-bold hover:bg-yellow-600"
-            >
-              Submit Rating
-            </button>
           </div>
         </div>
-      );
-    };
+      )}
 
-    // ✅ corrected React 18 rendering
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<ChapTapAutofix />);
-  </script>
+      {showChat && selectedProvider && <ChatModal provider={selectedProvider} messages={chats[`chat_${selectedProvider.id}`]||[]} onClose={()=>setShowChat(false)} onSend={msg=>sendMessage(selectedProvider.id,msg)}/>}
+
+      {showRating && selectedRequest && <RatingModal request={selectedRequest} onClose={()=>setShowRating(false)} onSubmit={submitRating}/>}
+
+      <footer className="bg-gradient-to-r from-black via-gray-900 to-black border-t-4 border-yellow-500 p-4 text-center fixed bottom-0 left-0 right-0 max-w-md mx-auto shadow-2xl">
+        <p className="font-black tracking-wider text-yellow-400 text-lg">⚫🟡 chapTAP Autofix</p>
+        <p className="text-xs text-yellow-200 mt-1">📞 support@chaptapautofix.co.ke | Premium Roadside Help</p>
+      </footer>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<ChapTapAutofix/>);
+</script>
 </body>
 </html>
