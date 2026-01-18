@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="chapTAP Autofix - Premium roadside assistance in Kenya" />
 <title>chapTAP Autofix</title>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -15,35 +14,35 @@
 
 <script type="text/babel">
 const { useState, useEffect } = React;
+const getLocal = (k, d)=>{ const v=localStorage.getItem(k); return v?v:JSON.stringify(d); };
+const setLocal = (k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const toRad = v=>v*Math.PI/180;
+const distanceKm = (lat1, lon1, lat2, lon2)=>{ const R=6371; const dLat=toRad(lat2-lat1); const dLon=toRad(lon2-lon1); const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2; const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); return R*c; }
 
-// ====== LOCAL STORAGE HELPERS ======
-const getLocal = (key, defaultValue) => {
-  const stored = localStorage.getItem(key);
-  return stored ? JSON.parse(stored) : defaultValue;
-};
-const setLocal = (key, value) => localStorage.setItem(key, JSON.stringify(value));
-
-// ====== UTILITY: DISTANCE ======
-const toRad = value => value * Math.PI / 180;
-const distanceKm = (lat1, lon1, lat2, lon2) => {
-  const R = 6371;
-  const dLat = toRad(lat2-lat1);
-  const dLon = toRad(lon2-lon1);
-  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-};
-
-// ====== MAIN APP ======
 const ChapTapAutofix = () => {
-  const [userType, setUserType] = useState('user'); 
-  const [requests, setRequests] = useState(getLocal('requests', []));
-  const [providers, setProviders] = useState(getLocal('providers', []));
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const [showRating, setShowRating] = useState(false);
+  const [userType,setUserType]=useState('user');
+  const [requests,setRequests]=useState(JSON.parse(getLocal('requests',[])));
+  const [providers,setProviders]=useState(JSON.parse(getLocal('providers',[])));
+  const [selectedRequest,setSelectedRequest]=useState(null);
+  const [showRating,setShowRating]=useState(false);
+  const [showPin,setShowPin]=useState(false);
+  const [pinVerified,setPinVerified]=useState(false);
 
-  useEffect(() => setLocal('requests', requests), [requests]);
-  useEffect(() => setLocal('providers', providers), [providers]);
+  useEffect(()=>setLocal('requests',requests),[requests]);
+  useEffect(()=>setLocal('providers',providers),[providers]);
+
+  const handleRoleChange=(type)=>{
+    if(type==='admin'){
+      setShowPin(true); // show PIN modal
+    } else {
+      setUserType(type);
+    }
+  };
+
+  const verifyPin=(pin)=>{
+    if(pin==='1234'){ setPinVerified(true); setUserType('admin'); setShowPin(false);}
+    else{ alert('Incorrect PIN'); setPinVerified(false); setShowPin(false); }
+  };
 
   return (
     <div className="min-h-screen p-4 max-w-md mx-auto">
@@ -54,85 +53,68 @@ const ChapTapAutofix = () => {
 
       {/* ROLE TOGGLE */}
       <div className="flex justify-center gap-2 mb-6">
-        {['user','provider','admin'].map(type => (
-          <button
-            key={type}
-            onClick={() => setUserType(type)}
-            className={`px-4 py-2 rounded-lg font-bold ${
-              userType === type ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white'
-            }`}
-          >
-            {type.charAt(0).toUpperCase() + type.slice(1)}
+        {['user','provider','admin'].map(type=>(
+          <button key={type} onClick={()=>handleRoleChange(type)}
+            className={`px-4 py-2 rounded-lg font-bold ${userType===type?'bg-yellow-500 text-black':'bg-gray-700 text-white'}`}>
+            {type.charAt(0).toUpperCase()+type.slice(1)}
           </button>
         ))}
       </div>
 
-      {/* VIEWS */}
-      {userType === 'user' && <UserView requests={requests} setRequests={setRequests} setSelectedRequest={setSelectedRequest} setShowRating={setShowRating} />}
-      {userType === 'provider' && <ProviderView requests={requests} providers={providers} setRequests={setRequests} />}
-      {userType === 'admin' && <AdminView requests={requests} providers={providers} setProviders={setProviders} />}
+      {/* VIEW */}
+      {userType==='user' && <UserView requests={requests} setRequests={setRequests} setSelectedRequest={setSelectedRequest} setShowRating={setShowRating} />}
+      {userType==='provider' && <ProviderView requests={requests} providers={providers} setRequests={setRequests} />}
+      {userType==='admin' && pinVerified && <AdminView requests={requests} providers={providers} setProviders={setProviders} />}
 
-      {showRating && selectedRequest && (
-        <RatingModal request={selectedRequest} onClose={() => setShowRating(false)} setRequests={setRequests} />
-      )}
+      {/* RATING MODAL */}
+      {showRating && selectedRequest && <RatingModal request={selectedRequest} onClose={()=>setShowRating(false)} setRequests={setRequests} />}
+
+      {/* PIN MODAL */}
+      {showPin && <AdminPinModal onVerify={verifyPin} onClose={()=>setShowPin(false)} />}
     </div>
   );
 };
 
-// ====== USER VIEW ======
-const UserView = ({ requests, setRequests, setSelectedRequest, setShowRating }) => {
-  const [issue, setIssue] = useState('');
-  const [otherIssue, setOtherIssue] = useState('');
-  const [locationName, setLocationName] = useState('');
-  const [coords, setCoords] = useState({lat:null,lng:null});
+// ===== PIN MODAL =====
+const AdminPinModal = ({onVerify,onClose})=>{
+  const [pin,setPin]=useState('');
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+        <h3 className="text-xl font-black mb-4">Enter Admin PIN</h3>
+        <input type="password" className="w-full p-2 border rounded mb-4" value={pin} onChange={e=>setPin(e.target.value)} placeholder="Default PIN: 1234"/>
+        <div className="flex gap-2">
+          <button className="flex-1 bg-yellow-500 py-2 rounded font-bold hover:bg-yellow-600" onClick={()=>onVerify(pin)}>Verify</button>
+          <button className="flex-1 bg-gray-500 py-2 rounded font-bold hover:bg-gray-600" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
-  // get GPS
-  useEffect(() => {
-    if(navigator.geolocation){
-      navigator.geolocation.getCurrentPosition(pos => setCoords({lat: pos.coords.latitude, lng: pos.coords.longitude}));
-    }
-  },[]);
-
-  const handleRequest = () => {
-    const finalIssue = issue === "Other" ? otherIssue : issue;
-    if(!finalIssue || !locationName){ alert('Select issue and location'); return; }
-    const newReq = {
-      id: Date.now(),
-      issue: finalIssue,
-      otherIssue: issue==="Other"?otherIssue:"",
-      locationName,
-      lat: coords.lat,
-      lng: coords.lng,
-      timestamp: new Date().toLocaleString(),
-      completed:false,
-      assignedTo:null,
-      rating:null,
-      comment:""
-    };
-    setRequests([newReq,...requests]);
-    setIssue(''); setOtherIssue(''); setLocationName('');
-    alert('Request submitted!');
-  };
-
+// ===== USER VIEW =====
+const UserView = ({ requests,setRequests,setSelectedRequest,setShowRating })=>{
+  const [issue,setIssue]=useState(''); const [other,setOther]=useState(''); const [loc,setLoc]=useState(''); const [coords,setCoords]=useState({lat:null,lng:null});
+  useEffect(()=>{ if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(pos=>setCoords({lat:pos.coords.latitude,lng:pos.coords.longitude})); }},[]);
+  const handleRequest=()=>{
+    const finalIssue = issue==='Other'?other:issue;
+    if(!finalIssue || !loc){ alert('Issue & location required'); return; }
+    const newReq={id:Date.now(),issue:finalIssue,otherIssue:issue==='Other'?other:'',locationName:loc,lat:coords.lat,lng:coords.lng,timestamp:new Date().toLocaleString(),completed:false,assignedTo:null,rating:null,comment:""};
+    setRequests([newReq,...requests]); setIssue(''); setOther(''); setLoc(''); alert('Request submitted'); 
+  }
   return (
     <div className="space-y-4">
-      <h2 className="font-black text-lg">🚨 Request Emergency Help</h2>
+      <h2 className="font-black text-lg">🚨 Request Help</h2>
       <select className="w-full p-2 border rounded" value={issue} onChange={e=>setIssue(e.target.value)}>
-        <option value="">Select Issue</option>
-        <option>Flat tyre</option>
-        <option>Battery</option>
-        <option>Overheating</option>
-        <option>Accident</option>
-        <option>Fuel</option>
-        <option>Other</option>
+        <option value="">Select Issue</option><option>Flat tyre</option><option>Battery</option><option>Overheating</option><option>Accident</option><option>Fuel</option><option>Other</option>
       </select>
-      {issue==="Other" && <input type="text" placeholder="Describe issue" className="w-full p-2 border rounded" value={otherIssue} onChange={e=>setOtherIssue(e.target.value)}/>}
-      <input type="text" className="w-full p-2 border rounded" placeholder="Location (e.g., Nyali)" value={locationName} onChange={e=>setLocationName(e.target.value)} />
-      <button onClick={handleRequest} className="w-full bg-yellow-500 text-black py-2 rounded font-bold hover:bg-yellow-600">Request Help</button>
+      {issue==='Other' && <input type="text" className="w-full p-2 border rounded" placeholder="Describe issue" value={other} onChange={e=>setOther(e.target.value)}/>}
+      <input type="text" className="w-full p-2 border rounded" placeholder="Location (e.g. Nyali)" value={loc} onChange={e=>setLoc(e.target.value)}/>
+      <button className="w-full bg-yellow-500 py-2 rounded font-bold hover:bg-yellow-600" onClick={handleRequest}>Request Help</button>
 
-      <h3 className="font-bold text-lg mt-6">📋 Request History</h3>
+      <h3 className="font-bold text-lg mt-4">📋 Request History</h3>
       {requests.length===0 && <p className="text-gray-500 text-sm">No requests yet.</p>}
-      {requests.map(r => (
+      {requests.map(r=>(
         <div key={r.id} className="bg-white p-3 rounded shadow flex justify-between items-center">
           <div>
             <p className="font-bold">{r.issue}</p>
@@ -140,141 +122,83 @@ const UserView = ({ requests, setRequests, setSelectedRequest, setShowRating }) 
             <p className="text-xs text-gray-500">{r.timestamp}</p>
             {r.rating && <p className="text-xs text-green-600">Rated: {r.rating}★</p>}
           </div>
-          {!r.completed && <button onClick={()=>{setSelectedRequest(r); setShowRating(true)}} className="bg-yellow-500 px-2 py-1 rounded text-xs hover:bg-yellow-600">Rate</button>}
+          {!r.completed && <button className="bg-yellow-500 px-2 py-1 rounded text-xs hover:bg-yellow-600" onClick={()=>{setSelectedRequest(r); setShowRating(true)}}>Rate</button>}
         </div>
       ))}
     </div>
-  );
+  )
 };
 
-// ====== PROVIDER VIEW ======
+// ====== PROVIDER VIEW ====== (same as previous, nearby requests, accept, progress)
 const ProviderView = ({ requests, providers, setRequests }) => {
-  const [myLat, setMyLat] = useState(null);
-  const [myLng, setMyLng] = useState(null);
-
-  useEffect(()=>{
-    if(navigator.geolocation){
-      navigator.geolocation.getCurrentPosition(pos => { setMyLat(pos.coords.latitude); setMyLng(pos.coords.longitude); });
-    }
-  },[]);
-
-  const acceptRequest = (reqId) => {
-    const updated = requests.map(r => r.id===reqId ? {...r, assignedTo:'You'} : r);
-    setRequests(updated);
-  };
-
-  const nearbyRequests = requests.filter(r => {
-    if(r.completed || r.assignedTo) return false;
-    if(myLat && myLng && r.lat && r.lng){
-      return distanceKm(myLat,myLng,r.lat,r.lng) <= 10; // within 10km
-    }
-    return true;
-  });
-
-  return (
-    <div className="space-y-4">
-      <h2 className="font-black text-lg">🛠️ Nearby Requests</h2>
-      {nearbyRequests.length===0 && <p className="text-gray-500 text-sm">No open requests nearby.</p>}
-      {nearbyRequests.map(r=>(
-        <div key={r.id} className="bg-white p-3 rounded shadow flex justify-between items-center">
-          <div>
-            <p className="font-bold">{r.issue}</p>
-            <p className="text-xs text-gray-500">{r.locationName}</p>
-            <p className="text-xs text-gray-500">{r.timestamp}</p>
-          </div>
-          <button onClick={()=>acceptRequest(r.id)} className="bg-green-500 px-2 py-1 rounded text-xs text-white hover:bg-green-600">Accept</button>
-        </div>
-      ))}
-      <h3 className="font-bold text-lg mt-6">📝 My Assigned Requests</h3>
-      {requests.filter(r=>r.assignedTo==='You' && !r.completed).length===0 && <p className="text-gray-500 text-sm">No accepted requests in progress.</p>}
-      {requests.filter(r=>r.assignedTo==='You' && !r.completed).map(r=>(
-        <div key={r.id} className="bg-white p-3 rounded shadow">
-          <p className="font-bold">{r.issue}</p>
-          <p className="text-xs text-gray-500">{r.locationName}</p>
-          <p className="text-xs text-gray-500">{r.timestamp}</p>
-          <span className="text-yellow-600 font-bold text-xs">IN PROGRESS</span>
-        </div>
-      ))}
-    </div>
-  );
+  const [myLat,setMyLat]=useState(null); const [myLng,setMyLng]=useState(null);
+  useEffect(()=>{ if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(pos=>{ setMyLat(pos.coords.latitude); setMyLng(pos.coords.longitude); }); }},[]);
+  const acceptRequest = (id)=>{ setRequests(requests.map(r=>r.id===id?{...r,assignedTo:'You'}:r)); };
+  const nearby=requests.filter(r=>!r.completed && !r.assignedTo && (myLat&&myLng&&r.lat&&r.lng?distanceKm(myLat,myLng,r.lat,r.lng)<=10:true));
+  return (<div className="space-y-4">
+    <h2 className="font-black text-lg">🛠️ Nearby Requests</h2>
+    {nearby.length===0 && <p className="text-gray-500 text-sm">No open requests nearby.</p>}
+    {nearby.map(r=>(<div key={r.id} className="bg-white p-3 rounded shadow flex justify-between items-center">
+      <div><p className="font-bold">{r.issue}</p><p className="text-xs text-gray-500">{r.locationName}</p><p className="text-xs text-gray-500">{r.timestamp}</p></div>
+      <button className="bg-green-500 px-2 py-1 rounded text-xs text-white hover:bg-green-600" onClick={()=>acceptRequest(r.id)}>Accept</button>
+    </div>))}
+    <h3 className="font-bold mt-4">📝 My Assigned Requests</h3>
+    {requests.filter(r=>r.assignedTo==='You' && !r.completed).length===0 && <p className="text-gray-500 text-sm">No accepted requests in progress.</p>}
+    {requests.filter(r=>r.assignedTo==='You' && !r.completed).map(r=>(<div key={r.id} className="bg-white p-3 rounded shadow">
+      <p className="font-bold">{r.issue}</p><p className="text-xs text-gray-500">{r.locationName}</p><p className="text-xs text-gray-500">{r.timestamp}</p>
+      <span className="text-yellow-600 font-bold text-xs">IN PROGRESS</span>
+    </div>))}
+  </div>);
 };
 
 // ====== ADMIN VIEW ======
 const AdminView = ({ requests, providers, setProviders }) => {
-  const handleApprove = (id, status) => setProviders(providers.map(p=>p.id===id?{...p, approved:status}:p));
-
-  return (
-    <div className="space-y-4">
-      <h2 className="font-black text-lg">👥 Admin Dashboard</h2>
-
-      <h3 className="font-bold mt-4">Pending Provider Approvals</h3>
-      {providers.filter(p=>!p.approved).length===0 && <p className="text-gray-500 text-sm">No pending providers.</p>}
-      {providers.filter(p=>!p.approved).map(p=>(
-        <div key={p.id} className="bg-white p-3 rounded shadow flex justify-between items-center">
-          <div>
-            <p className="font-bold">{p.name}</p>
-            <p className="text-xs text-gray-500">{p.services.join(', ')}</p>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={()=>handleApprove(p.id,true)} className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600">Approve</button>
-            <button onClick={()=>handleApprove(p.id,false)} className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">Reject</button>
-          </div>
-        </div>
-      ))}
-
-      <h3 className="font-bold mt-6">Completed Jobs</h3>
-      {requests.filter(r=>r.completed).length===0 && <p className="text-gray-500 text-sm">No completed jobs yet.</p>}
-      {requests.filter(r=>r.completed).map(r=>(
-        <div key={r.id} className="bg-white p-3 rounded shadow flex flex-col">
-          <p className="font-bold">{r.issue}</p>
-          <p className="text-xs text-gray-500">{r.locationName}</p>
-          <p className="text-xs text-gray-500">{r.timestamp}</p>
-          <p className="text-xs text-green-600">Provider: {r.assignedTo}</p>
-          <p className="text-xs text-yellow-600">Rating: {r.rating}★</p>
-          <p className="text-xs text-gray-600">Comment: {r.comment}</p>
-        </div>
-      ))}
-    </div>
-  );
+  const handleApprove=(id,status)=>setProviders(providers.map(p=>p.id===id?{...p,approved:status}:p));
+  return (<div className="space-y-4">
+    <h2 className="font-black text-lg">👥 Admin Dashboard</h2>
+    <h3 className="font-bold mt-2">Pending Provider Approvals</h3>
+    {providers.filter(p=>!p.approved).length===0 && <p className="text-gray-500 text-sm">No pending providers.</p>}
+    {providers.filter(p=>!p.approved).map(p=>(<div key={p.id} className="bg-white p-3 rounded shadow flex justify-between items-center">
+      <div><p className="font-bold">{p.name}</p><p className="text-xs text-gray-500">{p.services.join(', ')}</p></div>
+      <div className="flex gap-2">
+        <button className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600" onClick={()=>handleApprove(p.id,true)}>Approve</button>
+        <button className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600" onClick={()=>handleApprove(p.id,false)}>Reject</button>
+      </div>
+    </div>))}
+    <h3 className="font-bold mt-4">Completed Jobs</h3>
+    {requests.filter(r=>r.completed).length===0 && <p className="text-gray-500 text-sm">No completed jobs yet.</p>}
+    {requests.filter(r=>r.completed).map(r=>(<div key={r.id} className="bg-white p-3 rounded shadow flex flex-col">
+      <p className="font-bold">{r.issue}</p><p className="text-xs text-gray-500">{r.locationName}</p><p className="text-xs text-gray-500">{r.timestamp}</p>
+      <p className="text-xs text-green-600">Provider: {r.assignedTo}</p>
+      <p className="text-xs text-yellow-600">Rating: {r.rating}★</p>
+      <p className="text-xs text-gray-600">Comment: {r.comment}</p>
+    </div>))}
+  </div>);
 };
 
 // ====== RATING MODAL ======
-const RatingModal = ({ request, onClose, setRequests }) => {
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
-
-  const handleSubmit = () => {
-    if(rating===0){ alert('Select rating'); return; }
-    const updatedRequests = getLocal('requests').map(r=>r.id===request.id?{...r,rating,comment,completed:true}:r);
-    setLocal('requests', updatedRequests);
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-black">Rate Service</h3>
-          <button onClick={onClose} className="text-gray-500">✕</button>
-        </div>
-        <p className="text-sm text-gray-600 mb-2">Request: {request.issue}</p>
-        <div className="flex justify-center gap-2 mb-4">
-          {[1,2,3,4,5].map(star=>(
-            <button key={star} onClick={()=>setRating(star)} className={`text-3xl ${rating>=star?'text-yellow-500':'text-gray-300'}`}>★</button>
-          ))}
-        </div>
-        <div className="mb-4">
-          <label className="block font-bold mb-2">Comments (Optional)</label>
-          <textarea value={comment} onChange={e=>setComment(e.target.value)} placeholder="Share your experience..." className="w-full p-3 border rounded-lg" rows="3"/>
-        </div>
-        <button onClick={handleSubmit} className="w-full bg-yellow-500 text-black py-3 rounded-lg font-bold hover:bg-yellow-600">Submit Rating</button>
+const RatingModal = ({request,onClose,setRequests})=>{
+  const [rating,setRating]=useState(0); const [comment,setComment]=useState('');
+  const handleSubmit=()=>{ if(rating===0){alert('Select rating');return;} const updated=requests.map(r=>r.id===request.id?{...r,rating,comment,completed:true}:r); setLocal('requests',updated); onClose(); };
+  return (<div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-black">Rate Service</h3>
+        <button onClick={onClose} className="text-gray-500">✕</button>
       </div>
+      <p className="text-sm text-gray-600 mb-2">Request: {request.issue}</p>
+      <div className="flex justify-center gap-2 mb-4">{[1,2,3,4,5].map(star=>(<button key={star} onClick={()=>setRating(star)} className={`text-3xl ${rating>=star?'text-yellow-500':'text-gray-300'}`}>★</button>))}</div>
+      <div className="mb-4">
+        <label className="block font-bold mb-2">Comments (Optional)</label>
+        <textarea value={comment} onChange={e=>setComment(e.target.value)} placeholder="Share your experience..." className="w-full p-3 border rounded-lg" rows="3"/>
+      </div>
+      <button onClick={handleSubmit} className="w-full bg-yellow-500 text-black py-3 rounded-lg font-bold hover:bg-yellow-600">Submit Rating</button>
     </div>
-  );
-};
+  </div>);
+}
 
-// ====== ROOT ======
 ReactDOM.createRoot(document.getElementById('root')).render(<ChapTapAutofix />);
 </script>
 </body>
 </html>
+
