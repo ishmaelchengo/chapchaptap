@@ -1,16 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="chapTAP Autofix - Premium roadside assistance in Kenya" />
-  <title>chapTAP Autofix</title>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="chapTAP Autofix - Premium roadside assistance in Kenya" />
+<title>chapTAP Autofix</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
-
 <body class="bg-gray-100">
 <div id="root"></div>
 
@@ -24,9 +23,20 @@ const getLocal = (key, defaultValue) => {
 };
 const setLocal = (key, value) => localStorage.setItem(key, JSON.stringify(value));
 
+// ====== UTILITY: DISTANCE ======
+const toRad = value => value * Math.PI / 180;
+const distanceKm = (lat1, lon1, lat2, lon2) => {
+  const R = 6371;
+  const dLat = toRad(lat2-lat1);
+  const dLon = toRad(lon2-lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+};
+
 // ====== MAIN APP ======
 const ChapTapAutofix = () => {
-  const [userType, setUserType] = useState('user'); // user / provider / admin
+  const [userType, setUserType] = useState('user'); 
   const [requests, setRequests] = useState(getLocal('requests', []));
   const [providers, setProviders] = useState(getLocal('providers', []));
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -39,8 +49,7 @@ const ChapTapAutofix = () => {
     <div className="min-h-screen p-4 max-w-md mx-auto">
       {/* HEADER */}
       <header className="bg-gradient-to-r from-black via-gray-900 to-black text-yellow-400 p-4 rounded-xl text-center font-black mb-6 shadow-lg">
-        <span className="text-yellow-400">chap</span>
-        <span className="text-white">TAP</span> Autofix
+        <span className="text-yellow-400">chap</span><span className="text-white">TAP</span> Autofix
       </header>
 
       {/* ROLE TOGGLE */}
@@ -58,16 +67,13 @@ const ChapTapAutofix = () => {
         ))}
       </div>
 
-      {/* CONDITIONAL VIEWS */}
+      {/* VIEWS */}
       {userType === 'user' && <UserView requests={requests} setRequests={setRequests} setSelectedRequest={setSelectedRequest} setShowRating={setShowRating} />}
-      {userType === 'provider' && <ProviderView requests={requests} providers={providers} />}
-      {userType === 'admin' && <AdminView providers={providers} setProviders={setProviders} requests={requests} setRequests={setRequests} />}
-      
+      {userType === 'provider' && <ProviderView requests={requests} providers={providers} setRequests={setRequests} />}
+      {userType === 'admin' && <AdminView requests={requests} providers={providers} setProviders={setProviders} />}
+
       {showRating && selectedRequest && (
-        <RatingModal
-          request={selectedRequest}
-          onClose={() => setShowRating(false)}
-        />
+        <RatingModal request={selectedRequest} onClose={() => setShowRating(false)} setRequests={setRequests} />
       )}
     </div>
   );
@@ -76,20 +82,36 @@ const ChapTapAutofix = () => {
 // ====== USER VIEW ======
 const UserView = ({ requests, setRequests, setSelectedRequest, setShowRating }) => {
   const [issue, setIssue] = useState('');
-  const [location, setLocation] = useState('');
+  const [otherIssue, setOtherIssue] = useState('');
+  const [locationName, setLocationName] = useState('');
+  const [coords, setCoords] = useState({lat:null,lng:null});
+
+  // get GPS
+  useEffect(() => {
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(pos => setCoords({lat: pos.coords.latitude, lng: pos.coords.longitude}));
+    }
+  },[]);
 
   const handleRequest = () => {
-    if(!issue || !location) { alert('Select issue and describe location'); return; }
+    const finalIssue = issue === "Other" ? otherIssue : issue;
+    if(!finalIssue || !locationName){ alert('Select issue and location'); return; }
     const newReq = {
       id: Date.now(),
-      issue,
-      location,
+      issue: finalIssue,
+      otherIssue: issue==="Other"?otherIssue:"",
+      locationName,
+      lat: coords.lat,
+      lng: coords.lng,
       timestamp: new Date().toLocaleString(),
-      completed: false
+      completed:false,
+      assignedTo:null,
+      rating:null,
+      comment:""
     };
-    setRequests([newReq, ...requests]);
-    setIssue(''); setLocation('');
-    alert('Request created successfully!');
+    setRequests([newReq,...requests]);
+    setIssue(''); setOtherIssue(''); setLocationName('');
+    alert('Request submitted!');
   };
 
   return (
@@ -102,20 +124,23 @@ const UserView = ({ requests, setRequests, setSelectedRequest, setShowRating }) 
         <option>Overheating</option>
         <option>Accident</option>
         <option>Fuel</option>
+        <option>Other</option>
       </select>
-      <input type="text" className="w-full p-2 border rounded" placeholder="Describe location" value={location} onChange={e=>setLocation(e.target.value)} />
+      {issue==="Other" && <input type="text" placeholder="Describe issue" className="w-full p-2 border rounded" value={otherIssue} onChange={e=>setOtherIssue(e.target.value)}/>}
+      <input type="text" className="w-full p-2 border rounded" placeholder="Location (e.g., Nyali)" value={locationName} onChange={e=>setLocationName(e.target.value)} />
       <button onClick={handleRequest} className="w-full bg-yellow-500 text-black py-2 rounded font-bold hover:bg-yellow-600">Request Help</button>
 
       <h3 className="font-bold text-lg mt-6">📋 Request History</h3>
-      {requests.length === 0 && <p className="text-gray-500 text-sm">No requests yet.</p>}
+      {requests.length===0 && <p className="text-gray-500 text-sm">No requests yet.</p>}
       {requests.map(r => (
         <div key={r.id} className="bg-white p-3 rounded shadow flex justify-between items-center">
           <div>
             <p className="font-bold">{r.issue}</p>
+            <p className="text-xs text-gray-500">{r.locationName}</p>
             <p className="text-xs text-gray-500">{r.timestamp}</p>
-            <p className="text-xs text-gray-500">{r.location}</p>
+            {r.rating && <p className="text-xs text-green-600">Rated: {r.rating}★</p>}
           </div>
-          <button onClick={() => {setSelectedRequest(r); setShowRating(true)}} className="bg-yellow-500 px-2 py-1 rounded text-xs hover:bg-yellow-600">Rate</button>
+          {!r.completed && <button onClick={()=>{setSelectedRequest(r); setShowRating(true)}} className="bg-yellow-500 px-2 py-1 rounded text-xs hover:bg-yellow-600">Rate</button>}
         </div>
       ))}
     </div>
@@ -123,32 +148,51 @@ const UserView = ({ requests, setRequests, setSelectedRequest, setShowRating }) 
 };
 
 // ====== PROVIDER VIEW ======
-const ProviderView = ({ requests, providers }) => {
+const ProviderView = ({ requests, providers, setRequests }) => {
+  const [myLat, setMyLat] = useState(null);
+  const [myLng, setMyLng] = useState(null);
+
+  useEffect(()=>{
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(pos => { setMyLat(pos.coords.latitude); setMyLng(pos.coords.longitude); });
+    }
+  },[]);
+
+  const acceptRequest = (reqId) => {
+    const updated = requests.map(r => r.id===reqId ? {...r, assignedTo:'You'} : r);
+    setRequests(updated);
+  };
+
+  const nearbyRequests = requests.filter(r => {
+    if(r.completed || r.assignedTo) return false;
+    if(myLat && myLng && r.lat && r.lng){
+      return distanceKm(myLat,myLng,r.lat,r.lng) <= 10; // within 10km
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-4">
-      <h2 className="font-black text-lg">🛠️ Incoming Requests</h2>
-      {requests.length === 0 && <p className="text-gray-500 text-sm">No requests at the moment.</p>}
-      {requests.map(r => (
+      <h2 className="font-black text-lg">🛠️ Nearby Requests</h2>
+      {nearbyRequests.length===0 && <p className="text-gray-500 text-sm">No open requests nearby.</p>}
+      {nearbyRequests.map(r=>(
         <div key={r.id} className="bg-white p-3 rounded shadow flex justify-between items-center">
           <div>
             <p className="font-bold">{r.issue}</p>
+            <p className="text-xs text-gray-500">{r.locationName}</p>
             <p className="text-xs text-gray-500">{r.timestamp}</p>
-            <p className="text-xs text-gray-500">{r.location}</p>
           </div>
-          <span className="text-green-600 font-bold text-xs">OPEN</span>
+          <button onClick={()=>acceptRequest(r.id)} className="bg-green-500 px-2 py-1 rounded text-xs text-white hover:bg-green-600">Accept</button>
         </div>
       ))}
-      <h3 className="font-bold text-lg mt-6">🔍 Providers</h3>
-      {providers.length === 0 && <p className="text-gray-500 text-sm">No providers registered yet.</p>}
-      {providers.map(p => (
-        <div key={p.id} className="bg-white p-3 rounded shadow flex justify-between items-center">
-          <div>
-            <p className="font-bold">{p.name}</p>
-            <p className="text-xs text-gray-500">{p.services.join(', ')}</p>
-          </div>
-          <span className={`px-2 py-1 rounded text-xs font-bold ${p.approved ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}>
-            {p.approved ? 'Approved' : 'Pending'}
-          </span>
+      <h3 className="font-bold text-lg mt-6">📝 My Assigned Requests</h3>
+      {requests.filter(r=>r.assignedTo==='You' && !r.completed).length===0 && <p className="text-gray-500 text-sm">No accepted requests in progress.</p>}
+      {requests.filter(r=>r.assignedTo==='You' && !r.completed).map(r=>(
+        <div key={r.id} className="bg-white p-3 rounded shadow">
+          <p className="font-bold">{r.issue}</p>
+          <p className="text-xs text-gray-500">{r.locationName}</p>
+          <p className="text-xs text-gray-500">{r.timestamp}</p>
+          <span className="text-yellow-600 font-bold text-xs">IN PROGRESS</span>
         </div>
       ))}
     </div>
@@ -156,10 +200,8 @@ const ProviderView = ({ requests, providers }) => {
 };
 
 // ====== ADMIN VIEW ======
-const AdminView = ({ providers, setProviders, requests, setRequests }) => {
-  const handleApprove = (id, status) => {
-    setProviders(providers.map(p => p.id === id ? {...p, approved: status} : p));
-  };
+const AdminView = ({ requests, providers, setProviders }) => {
+  const handleApprove = (id, status) => setProviders(providers.map(p=>p.id===id?{...p, approved:status}:p));
 
   return (
     <div className="space-y-4">
@@ -180,16 +222,16 @@ const AdminView = ({ providers, setProviders, requests, setRequests }) => {
         </div>
       ))}
 
-      <h3 className="font-bold mt-6">All Requests</h3>
-      {requests.length===0 && <p className="text-gray-500 text-sm">No requests yet.</p>}
-      {requests.map(r=>(
-        <div key={r.id} className="bg-white p-3 rounded shadow flex justify-between items-center">
-          <div>
-            <p className="font-bold">{r.issue}</p>
-            <p className="text-xs text-gray-500">{r.location}</p>
-            <p className="text-xs text-gray-500">{r.timestamp}</p>
-          </div>
-          <span className="text-xs font-bold text-green-600">{r.completed?'Completed':'Open'}</span>
+      <h3 className="font-bold mt-6">Completed Jobs</h3>
+      {requests.filter(r=>r.completed).length===0 && <p className="text-gray-500 text-sm">No completed jobs yet.</p>}
+      {requests.filter(r=>r.completed).map(r=>(
+        <div key={r.id} className="bg-white p-3 rounded shadow flex flex-col">
+          <p className="font-bold">{r.issue}</p>
+          <p className="text-xs text-gray-500">{r.locationName}</p>
+          <p className="text-xs text-gray-500">{r.timestamp}</p>
+          <p className="text-xs text-green-600">Provider: {r.assignedTo}</p>
+          <p className="text-xs text-yellow-600">Rating: {r.rating}★</p>
+          <p className="text-xs text-gray-600">Comment: {r.comment}</p>
         </div>
       ))}
     </div>
@@ -197,16 +239,14 @@ const AdminView = ({ providers, setProviders, requests, setRequests }) => {
 };
 
 // ====== RATING MODAL ======
-const RatingModal = ({ request, onClose }) => {
+const RatingModal = ({ request, onClose, setRequests }) => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
 
   const handleSubmit = () => {
     if(rating===0){ alert('Select rating'); return; }
-    request.rating=rating;
-    request.comment=comment;
-    request.completed=true;
-    setLocal('requests', getLocal('requests').map(r=>r.id===request.id ? request:r));
+    const updatedRequests = getLocal('requests').map(r=>r.id===request.id?{...r,rating,comment,completed:true}:r);
+    setLocal('requests', updatedRequests);
     onClose();
   };
 
