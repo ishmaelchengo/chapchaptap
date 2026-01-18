@@ -1,262 +1,296 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>chapTAP Autofix</title>
-<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>chapTAP Autofix - Roadside Assistance Kenya</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100">
-<div id="root"></div>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-<script type="text/babel">
+    // Simple Icons
+    const Phone = () => <span>📞</span>;
+    const Message = () => <span>💬</span>;
+    const Star = () => <span>⭐</span>;
+    const Pin = () => <span>📍</span>;
+    const Alert = () => <span>🚨</span>;
+    const Bell = () => <span>🔔</span>;
+    const Toggle = ({ on }) => <span>{on ? '🟢' : '🔴'}</span>;
 
-const { useState, useEffect } = React;
+    const App = () => {
+      const [role, setRole] = useState('user');
+      const [view, setView] = useState('home');
+      const [providers, setProviders] = useState([
+        {id:1, name:'Mike Garage', phone:'0721122334', services:['Towing','Tyre'], location:'Nyali', rating:4.5, status:'Approved', available:true},
+        {id:2, name:'Quick Fix Auto', phone:'0733445566', services:['Battery'], location:'CBD', rating:4.3, status:'Approved', available:true}
+      ]);
+      const [requests, setRequests] = useState([]);
+      const [showEmergency, setShowEmergency] = useState(false);
+      const [showAdminAuth, setShowAdminAuth] = useState(false);
+      const [showProviderAuth, setShowProviderAuth] = useState(false);
+      const [adminPin, setAdminPin] = useState('');
+      const [providerPhone, setProviderPhone] = useState('');
+      const [currentProviderId, setCurrentProviderId] = useState(null);
+      const [notifications, setNotifications] = useState([]);
+      const [emergencyData, setEmergencyData] = useState({issue:'', location:'', type:'roadside'});
 
-// ===== LocalStorage Helpers =====
-const getLocal = (k,d)=>{ const v=localStorage.getItem(k); return v?v:JSON.stringify(d); };
-const setLocal = (k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      const addNotif = (msg) => setNotifications([{id:Date.now(), msg, time:new Date().toLocaleTimeString()}, ...notifications]);
 
-// ===== Distance Helper =====
-const toRad = v=>v*Math.PI/180;
-const distanceKm = (lat1, lon1, lat2, lon2)=>{ const R=6371; const dLat=toRad(lat2-lat1); const dLon=toRad(lon2-lon1); const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2; const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); return R*c; }
+      const submitEmergency = () => {
+        if(!emergencyData.issue || !emergencyData.location) return alert('Fill all fields');
+        const req = {id:Date.now(), ...emergencyData, status:'Open', timestamp:new Date().toLocaleString()};
+        setRequests([req, ...requests]);
+        addNotif('Emergency request submitted!');
+        setShowEmergency(false);
+        setEmergencyData({issue:'', location:'', type:'roadside'});
+      };
 
-// ===== MAIN APP =====
-const ChapTapAutofix = () => {
-  const [userType,setUserType]=useState('user');
-  const [pinVerified,setPinVerified]=useState(false);
-  const [showPin,setShowPin]=useState(false);
+      const loginAdmin = () => {
+        if(adminPin === '1234') {
+          setRole('admin');
+          setShowAdminAuth(false);
+        } else alert('Wrong PIN');
+      };
 
-  const [requests,setRequests]=useState(JSON.parse(getLocal('requests',[])));
-  const [providers,setProviders]=useState(JSON.parse(getLocal('providers',[])));
-  const [selectedRequest,setSelectedRequest]=useState(null);
-  const [showRating,setShowRating]=useState(false);
+      const loginProvider = () => {
+        const p = providers.find(x => x.phone === providerPhone && x.status === 'Approved');
+        if(p) {
+          setRole('provider');
+          setCurrentProviderId(p.id);
+          setShowProviderAuth(false);
+        } else alert('Provider not found');
+      };
 
-  useEffect(()=>setLocal('requests',requests),[requests]);
-  useEffect(()=>setLocal('providers',providers),[providers]);
+      const acceptRequest = (id) => {
+        setRequests(requests.map(r => r.id === id ? {...r, status:'In Progress', providerId:currentProviderId} : r));
+        addNotif('Request accepted!');
+      };
 
-  const handleRoleChange=(type)=>{
-    if(type==='admin'){ setShowPin(true); }
-    else{ setUserType(type); }
-  }
+      const completeRequest = (id) => {
+        setRequests(requests.map(r => r.id === id ? {...r, status:'Completed'} : r));
+        addNotif('Job completed!');
+      };
 
-  const verifyPin=(pin)=>{
-    if(pin==='1234'){ setPinVerified(true); setUserType('admin'); setShowPin(false); }
-    else{ alert('Incorrect PIN'); setPinVerified(false); setShowPin(false); }
-  }
+      const toggleAvailable = () => {
+        setProviders(providers.map(p => p.id === currentProviderId ? {...p, available:!p.available} : p));
+      };
 
-  return (
-    <div className="min-h-screen p-4 max-w-md mx-auto">
-      {/* HEADER */}
-      <header className="bg-gradient-to-r from-black via-gray-900 to-black text-yellow-400 p-4 rounded-xl text-center font-black mb-6 shadow-lg">
-        <span className="text-yellow-400">chap</span><span className="text-white">TAP</span> Autofix
-      </header>
+      const currentProvider = providers.find(p => p.id === currentProviderId);
+      const myJobs = requests.filter(r => r.providerId === currentProviderId);
 
-      {/* ROLE TOGGLE */}
-      <div className="flex justify-center gap-2 mb-6">
-        {['user','provider','admin'].map(type=>(
-          <button key={type} onClick={()=>handleRoleChange(type)}
-            className={`px-4 py-2 rounded-lg font-bold ${userType===type?'bg-yellow-500 text-black':'bg-gray-700 text-white'}`}>
-            {type.charAt(0).toUpperCase()+type.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {/* VIEWS */}
-      {userType==='user' && <UserView requests={requests} setRequests={setRequests} setSelectedRequest={setSelectedRequest} setShowRating={setShowRating}/>}
-      {userType==='provider' && <ProviderView requests={requests} providers={providers} setRequests={setRequests} setProviders={setProviders}/>}
-      {userType==='admin' && pinVerified && <AdminView requests={requests} providers={providers} setProviders={setProviders}/>}
-
-      {/* RATING MODAL */}
-      {showRating && selectedRequest && <RatingModal request={selectedRequest} onClose={()=>setShowRating(false)} setRequests={setRequests}/>}
-
-      {/* PIN MODAL */}
-      {showPin && <AdminPinModal onVerify={verifyPin} onClose={()=>setShowPin(false)}/>}
-    </div>
-  );
-};
-
-// ===== PIN MODAL =====
-const AdminPinModal = ({onVerify,onClose})=>{
-  const [pin,setPin]=useState('');
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-        <h3 className="text-xl font-black mb-4">Enter Admin PIN</h3>
-        <input type="password" className="w-full p-2 border rounded mb-4" value={pin} onChange={e=>setPin(e.target.value)} placeholder="Default PIN: 1234"/>
-        <div className="flex gap-2">
-          <button className="flex-1 bg-yellow-500 py-2 rounded font-bold hover:bg-yellow-600" onClick={()=>onVerify(pin)}>Verify</button>
-          <button className="flex-1 bg-gray-500 py-2 rounded font-bold hover:bg-gray-600" onClick={onClose}>Cancel</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ===== USER VIEW =====
-const UserView = ({ requests,setRequests,setSelectedRequest,setShowRating })=>{
-  const [issue,setIssue]=useState(''); const [other,setOther]=useState(''); const [loc,setLoc]=useState(''); const [coords,setCoords]=useState({lat:null,lng:null});
-  useEffect(()=>{ if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(pos=>setCoords({lat:pos.coords.latitude,lng:pos.coords.longitude})); }},[]);
-  
-  const handleRequest=()=>{
-    const finalIssue = issue==='Other'?other:issue;
-    if(!finalIssue || !loc){ alert('Issue & location required'); return; }
-    const newReq={id:Date.now(),issue:finalIssue,otherIssue:issue==='Other'?other:'',locationName:loc,lat:coords.lat,lng:coords.lng,timestamp:new Date().toLocaleString(),completed:false,assignedTo:null,rating:null,comment:""};
-    setRequests([newReq,...requests]); setIssue(''); setOther(''); setLoc(''); alert('Request submitted'); 
-  }
-
-  return (
-    <div className="space-y-4">
-      <h2 className="font-black text-lg">🚨 Request Help</h2>
-      <select className="w-full p-2 border rounded" value={issue} onChange={e=>setIssue(e.target.value)}>
-        <option value="">Select Issue</option><option>Flat tyre</option><option>Battery</option><option>Overheating</option><option>Accident</option><option>Fuel</option><option>Other</option>
-      </select>
-      {issue==='Other' && <input type="text" className="w-full p-2 border rounded" placeholder="Describe issue" value={other} onChange={e=>setOther(e.target.value)}/>}
-      <input type="text" className="w-full p-2 border rounded" placeholder="Location (e.g. Nyali)" value={loc} onChange={e=>setLoc(e.target.value)}/>
-      <button className="w-full bg-yellow-500 py-2 rounded font-bold hover:bg-yellow-600" onClick={handleRequest}>Request Help</button>
-
-      <h3 className="font-bold text-lg mt-4">📋 Request History</h3>
-      {requests.length===0 && <p className="text-gray-500 text-sm">No requests yet.</p>}
-      {requests.map(r=>{
-        const [open,setOpen]=useState(false);
-        return (
-        <div key={r.id} className="bg-white p-3 rounded shadow mb-2">
-          <div className="flex justify-between cursor-pointer" onClick={()=>setOpen(!open)}>
-            <p className="font-bold">{r.issue}</p>
-            <p className="text-xs text-gray-500">{r.timestamp}</p>
+      return (
+        <div className="min-h-screen bg-gray-50 pb-20">
+          {/* HEADER */}
+          <div className="bg-gradient-to-r from-black to-gray-900 border-b-4 border-yellow-500 p-6 text-center sticky top-0 z-50">
+            <h1 className="text-3xl font-black">
+              <span className="text-yellow-400">chap</span>
+              <span className="text-white">TAP</span>
+            </h1>
+            <p className="text-yellow-200 text-xs">Autofix - Premium Roadside Assistance</p>
+            <div className="flex gap-2 justify-center mt-4">
+              <button onClick={() => {setRole('user'); setView('home');}} className={`px-4 py-2 rounded font-bold text-xs ${role==='user'?'bg-yellow-500 text-black':'bg-gray-700 text-white'}`}>User</button>
+              <button onClick={() => setShowProviderAuth(true)} className={`px-4 py-2 rounded font-bold text-xs ${role==='provider'?'bg-yellow-500 text-black':'bg-gray-700 text-white'}`}>Provider</button>
+              <button onClick={() => setShowAdminAuth(true)} className={`px-4 py-2 rounded font-bold text-xs ${role==='admin'?'bg-yellow-500 text-black':'bg-gray-700 text-white'}`}>Admin</button>
+            </div>
+            <button onClick={() => alert(notifications.map(n => n.msg).join('\n') || 'No notifications')} className="absolute top-6 right-6 text-yellow-400 text-2xl"><Bell/>{notifications.length>0 && <span className="text-xs bg-red-500 rounded-full px-1">{notifications.length}</span>}</button>
           </div>
-          {open && <div className="mt-2 text-xs text-gray-600">
-            <p>Location: {r.locationName}</p>
-            <p>Assigned Provider: {r.assignedTo || 'Not assigned'}</p>
-            {r.completed && <p>Rating: {r.rating}★</p>}
-            {r.comment && <p>Comment: {r.comment}</p>}
-            {!r.completed && r.assignedTo && <button className="bg-yellow-500 px-2 py-1 rounded mt-2 hover:bg-yellow-600" onClick={()=>{setSelectedRequest(r); setShowRating(true)}}>Rate</button>}
-          </div>}
+
+          <div className="max-w-md mx-auto p-4">
+            {/* USER VIEW */}
+            {role === 'user' && (
+              <>
+                {view === 'home' && (
+                  <div className="space-y-4">
+                    <button onClick={() => setShowEmergency(true)} className="w-full bg-red-600 text-white py-4 rounded-xl font-black text-lg"><Alert/> EMERGENCY HELP</button>
+                    <button onClick={() => setView('providers')} className="w-full bg-black text-yellow-400 py-4 rounded-xl font-black">⚫🟡 Find Providers</button>
+                    <button onClick={() => setView('requests')} className="w-full bg-purple-600 text-white py-3 rounded-xl font-bold">My Requests ({requests.length})</button>
+                  </div>
+                )}
+                {view === 'providers' && (
+                  <div className="space-y-4">
+                    <button onClick={() => setView('home')} className="text-blue-600 font-bold">← Back</button>
+                    <h2 className="text-2xl font-black">Service Providers</h2>
+                    {providers.filter(p => p.status === 'Approved').map(p => (
+                      <div key={p.id} className="bg-white p-4 rounded-xl shadow-lg">
+                        <div className="flex justify-between mb-2">
+                          <div>
+                            <div className="font-bold text-lg">{p.name}</div>
+                            <div className="text-sm text-gray-600"><Pin/> {p.location}</div>
+                            <div className="text-sm text-blue-600">{p.services.join(', ')}</div>
+                            <div className={`inline-block mt-1 px-2 py-1 rounded text-xs font-bold ${p.available?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{p.available?'Available':'Busy'}</div>
+                          </div>
+                          <div><Star/> {p.rating}</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <a href={`tel:${p.phone}`} className="bg-blue-600 text-white py-2 rounded text-center"><Phone/> Call</a>
+                          <a href={`https://wa.me/${p.phone.replace(/^0/,'254')}`} target="_blank" className="bg-green-600 text-white py-2 rounded text-center"><Message/> WhatsApp</a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {view === 'requests' && (
+                  <div className="space-y-4">
+                    <button onClick={() => setView('home')} className="text-blue-600 font-bold">← Back</button>
+                    <h2 className="text-2xl font-black">My Requests</h2>
+                    {requests.map(r => (
+                      <div key={r.id} className="bg-white p-4 rounded shadow">
+                        <div className="flex justify-between">
+                          <div>
+                            <div className="font-bold">{r.issue}</div>
+                            <div className="text-sm text-gray-600">{r.location}</div>
+                          </div>
+                          <div className={`px-2 py-1 rounded text-xs ${r.status==='Open'?'bg-yellow-100':'bg-green-100'}`}>{r.status}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* PROVIDER VIEW */}
+            {role === 'provider' && currentProvider && (
+              <>
+                {view === 'home' && (
+                  <div className="space-y-4">
+                    <div className="bg-green-600 text-white p-6 rounded-xl">
+                      <h2 className="text-2xl font-black">{currentProvider.name}</h2>
+                      <p className="text-sm">{currentProvider.location}</p>
+                      <button onClick={toggleAvailable} className={`mt-4 w-full py-3 rounded font-bold ${currentProvider.available?'bg-red-600':'bg-white text-green-700'}`}>
+                        <Toggle on={currentProvider.available}/> {currentProvider.available?'Go Offline':'Go Online'}
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white p-4 rounded shadow"><div className="text-2xl font-bold text-blue-600">{myJobs.length}</div><div className="text-sm">Total Jobs</div></div>
+                      <div className="bg-white p-4 rounded shadow"><div className="text-2xl font-bold text-green-600">{myJobs.filter(j=>j.status==='Completed').length}</div><div className="text-sm">Completed</div></div>
+                    </div>
+                    <button onClick={() => setView('available')} className="w-full bg-blue-600 text-white py-3 rounded font-bold">Available Requests ({requests.filter(r=>r.status==='Open').length})</button>
+                    <button onClick={() => setView('myjobs')} className="w-full bg-green-600 text-white py-3 rounded font-bold">My Jobs ({myJobs.filter(j=>j.status==='In Progress').length})</button>
+                  </div>
+                )}
+                {view === 'available' && (
+                  <div className="space-y-4">
+                    <button onClick={() => setView('home')} className="text-blue-600 font-bold">← Back</button>
+                    <h2 className="text-2xl font-black">Available Requests</h2>
+                    {requests.filter(r => r.status === 'Open').map(r => (
+                      <div key={r.id} className="bg-white p-4 rounded shadow">
+                        <div className="font-bold">{r.issue}</div>
+                        <div className="text-sm text-gray-600">{r.location}</div>
+                        <button onClick={() => acceptRequest(r.id)} className="mt-2 w-full bg-green-600 text-white py-2 rounded font-bold">Accept</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {view === 'myjobs' && (
+                  <div className="space-y-4">
+                    <button onClick={() => setView('home')} className="text-blue-600 font-bold">← Back</button>
+                    <h2 className="text-2xl font-black">My Jobs</h2>
+                    {myJobs.filter(j => j.status === 'In Progress').map(r => (
+                      <div key={r.id} className="bg-white p-4 rounded shadow">
+                        <div className="font-bold">{r.issue}</div>
+                        <div className="text-sm text-gray-600">{r.location}</div>
+                        <button onClick={() => completeRequest(r.id)} className="mt-2 w-full bg-green-600 text-white py-2 rounded font-bold">Mark Complete</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ADMIN VIEW */}
+            {role === 'admin' && (
+              <div className="space-y-4">
+                <h2 className="text-2xl font-black">Admin Dashboard</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-500 text-white p-4 rounded"><div className="text-2xl font-bold">{requests.length}</div><div className="text-sm">Total Requests</div></div>
+                  <div className="bg-green-500 text-white p-4 rounded"><div className="text-2xl font-bold">{providers.filter(p=>p.status==='Approved').length}</div><div className="text-sm">Providers</div></div>
+                </div>
+                <div className="bg-white p-4 rounded shadow">
+                  <h3 className="font-bold mb-2">All Requests</h3>
+                  {requests.map(r => (
+                    <div key={r.id} className="border-b py-2">
+                      <div className="font-semibold">{r.issue}</div>
+                      <div className="text-sm text-gray-600">{r.location} - {r.status}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* EMERGENCY MODAL */}
+          {showEmergency && (
+            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-xl p-6 max-w-md w-full">
+                <h3 className="text-xl font-bold mb-4"><Alert/> Emergency Request</h3>
+                <select value={emergencyData.issue} onChange={e => setEmergencyData({...emergencyData, issue:e.target.value})} className="w-full p-3 border rounded mb-3">
+                  <option value="">Select issue...</option>
+                  <option>Engine Problem</option>
+                  <option>Battery Dead</option>
+                  <option>Flat Tyre</option>
+                  <option>Out of Fuel</option>
+                </select>
+                <textarea value={emergencyData.location} onChange={e => setEmergencyData({...emergencyData, location:e.target.value})} placeholder="Describe location..." className="w-full p-3 border rounded mb-3" rows="3"/>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <button onClick={() => setEmergencyData({...emergencyData, type:'roadside'})} className={`p-2 rounded border-2 ${emergencyData.type==='roadside'?'bg-yellow-500 border-yellow-600':'border-gray-300'}`}>🛣️ Roadside</button>
+                  <button onClick={() => setEmergencyData({...emergencyData, type:'home'})} className={`p-2 rounded border-2 ${emergencyData.type==='home'?'bg-yellow-500 border-yellow-600':'border-gray-300'}`}>🏠 Home</button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={submitEmergency} className="bg-red-600 text-white py-2 rounded font-bold">Submit</button>
+                  <button onClick={() => setShowEmergency(false)} className="bg-gray-300 py-2 rounded font-bold">Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ADMIN AUTH */}
+          {showAdminAuth && (
+            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-xl p-6 max-w-sm w-full">
+                <h3 className="text-xl font-bold mb-4">Admin Login</h3>
+                <input type="password" placeholder="PIN (1234)" value={adminPin} onChange={e => setAdminPin(e.target.value)} className="w-full p-3 border rounded mb-4"/>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={loginAdmin} className="bg-blue-600 text-white py-2 rounded font-bold">Login</button>
+                  <button onClick={() => setShowAdminAuth(false)} className="bg-gray-300 py-2 rounded font-bold">Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PROVIDER AUTH */}
+          {showProviderAuth && (
+            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-xl p-6 max-w-sm w-full">
+                <h3 className="text-xl font-bold mb-4">Provider Login</h3>
+                <input type="tel" placeholder="Phone (0721122334)" value={providerPhone} onChange={e => setProviderPhone(e.target.value)} className="w-full p-3 border rounded mb-4"/>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={loginProvider} className="bg-green-600 text-white py-2 rounded font-bold">Login</button>
+                  <button onClick={() => setShowProviderAuth(false)} className="bg-gray-300 py-2 rounded font-bold">Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* FOOTER */}
+          <div className="bg-gradient-to-r from-black to-gray-900 border-t-4 border-yellow-500 p-4 text-center fixed bottom-0 left-0 right-0">
+            <p className="font-black text-yellow-400">⚫🟡 chapTAP Autofix</p>
+            <p className="text-xs text-yellow-200">📞 support@chaptapautofix.co.ke</p>
+          </div>
         </div>
-      )})}
-    </div>
-  )
-};
+      );
+    };
 
-// ===== PROVIDER VIEW =====
-const ProviderView = ({ requests, providers, setRequests,setProviders })=>{
-  const [myLat,setMyLat]=useState(null); const [myLng,setMyLng]=useState(null);
-  const [registering,setRegistering]=useState(false);
-  const [regForm,setRegForm]=useState({name:'',phone:'',services:[],experience:'',idNumber:'',lat:null,lng:null});
-
-  useEffect(()=>{ if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(pos=>{ setMyLat(pos.coords.latitude); setMyLng(pos.coords.longitude); setRegForm({...regForm,lat:pos.coords.latitude,lng:pos.coords.longitude}); }); }},[]);
-
-  const acceptRequest=(id)=>{ setRequests(requests.map(r=>r.id===id?{...r,assignedTo:'You'}:r)); };
-  const completeRequest=(id)=>{ setRequests(requests.map(r=>r.id===id?{...r,completed:true}:r)); };
-
-  const nearby=requests.filter(r=>!r.completed && !r.assignedTo && (myLat&&myLng&&r.lat&&r.lng?distanceKm(myLat,myLng,r.lat,r.lng)<=10:true));
-
-  const handleRegister=()=>{
-    if(!regForm.name || !regForm.phone || regForm.services.length===0){ alert('Fill all required fields'); return; }
-    const newProvider={...regForm,id:Date.now(),approved:false};
-    setProviders([...providers,newProvider]); alert('Registration submitted! Waiting for Admin approval.'); setRegistering(false);
-  }
-
-  const toggleService=(service)=>{
-    const updated=regForm.services.includes(service)?regForm.services.filter(s=>s!==service):[...regForm.services,service];
-    setRegForm({...regForm,services:updated});
-  }
-
-  return (
-    <div className="space-y-4">
-      {!registering && <button className="w-full bg-yellow-500 py-2 rounded font-bold hover:bg-yellow-600" onClick={()=>setRegistering(true)}>Register as Service Provider</button>}
-      {registering && <div className="bg-white p-3 rounded shadow space-y-2">
-        <input type="text" placeholder="Name" className="w-full p-2 border rounded" value={regForm.name} onChange={e=>setRegForm({...regForm,name:e.target.value})}/>
-        <input type="text" placeholder="Phone" className="w-full p-2 border rounded" value={regForm.phone} onChange={e=>setRegForm({...regForm,phone:e.target.value})}/>
-        <input type="text" placeholder="Experience (years)" className="w-full p-2 border rounded" value={regForm.experience} onChange={e=>setRegForm({...regForm,experience:e.target.value})}/>
-        <input type="text" placeholder="ID/License Number" className="w-full p-2 border rounded" value={regForm.idNumber} onChange={e=>setRegForm({...regForm,idNumber:e.target.value})}/>
-        <div className="flex flex-wrap gap-2">
-          {['Flat tyre','Battery','Overheating','Accident','Fuel'].map(s=>(
-            <button key={s} className={`px-2 py-1 rounded ${regForm.services.includes(s)?'bg-yellow-500 text-black':'bg-gray-200'}`} onClick={()=>toggleService(s)}>{s}</button>
-          ))}
-        </div>
-        <button className="w-full bg-green-500 py-2 rounded font-bold text-white hover:bg-green-600" onClick={handleRegister}>Submit Registration</button>
-      </div>}
-
-      <h2 className="font-black text-lg">🛠️ Nearby Requests</h2>
-      {nearby.length===0 && <p className="text-gray-500 text-sm">No open requests nearby.</p>}
-      {nearby.map(r=>(<div key={r.id} className="bg-white p-3 rounded shadow flex justify-between items-center mb-2">
-        <div><p className="font-bold">{r.issue}</p><p className="text-xs text-gray-500">{r.locationName}</p><p className="text-xs text-gray-500">{r.timestamp}</p></div>
-        <button className="bg-green-500 px-2 py-1 rounded text-xs text-white hover:bg-green-600" onClick={()=>acceptRequest(r.id)}>Accept</button>
-      </div>))}
-
-      <h3 className="font-bold mt-4">📝 My Assigned Requests</h3>
-      {requests.filter(r=>r.assignedTo==='You' && !r.completed).length===0 && <p className="text-gray-500 text-sm">No accepted requests in progress.</p>}
-      {requests.filter(r=>r.assignedTo==='You' && !r.completed).map(r=>(<div key={r.id} className="bg-white p-3 rounded shadow mb-2 flex justify-between items-center">
-        <div><p className="font-bold">{r.issue}</p><p className="text-xs text-gray-500">{r.locationName}</p><p className="text-xs text-gray-500">{r.timestamp}</p></div>
-        <button className="bg-yellow-500 px-2 py-1 rounded text-xs hover:bg-yellow-600" onClick={()=>completeRequest(r.id)}>Mark Completed</button>
-      </div>))}
-    </div>
-  )
-};
-
-// ===== ADMIN VIEW =====
-const AdminView = ({ requests, providers, setProviders })=>{
-  const handleApprove=(id,status)=>setProviders(providers.map(p=>p.id===id?{...p,approved:status}:p));
-  return (
-    <div className="space-y-4">
-      <h2 className="font-black text-lg">👥 Admin Dashboard</h2>
-      <h3 className="font-bold mt-2">Pending Provider Approvals</h3>
-      {providers.filter(p=>!p.approved).length===0 && <p className="text-gray-500 text-sm">No pending providers.</p>}
-      {providers.filter(p=>!p.approved).map(p=>(<div key={p.id} className="bg-white p-3 rounded shadow flex justify-between items-center mb-2">
-        <div><p className="font-bold">{p.name}</p><p className="text-xs text-gray-500">{p.services.join(', ')}</p></div>
-        <div className="flex gap-2">
-          <button className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600" onClick={()=>handleApprove(p.id,true)}>Approve</button>
-          <button className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600" onClick={()=>handleApprove(p.id,false)}>Reject</button>
-        </div>
-      </div>))}
-      
-      <h3 className="font-bold mt-4">Completed Jobs</h3>
-      {requests.filter(r=>r.completed).length===0 && <p className="text-gray-500 text-sm">No completed jobs yet.</p>}
-      {requests.filter(r=>r.completed).map(r=>(<div key={r.id} className="bg-white p-3 rounded shadow mb-2 flex flex-col">
-        <p className="font-bold">{r.issue}</p><p className="text-xs text-gray-500">{r.locationName}</p><p className="text-xs text-gray-500">{r.timestamp}</p>
-        <p className="text-xs text-green-600">Provider: {r.assignedTo}</p>
-        <p className="text-xs text-yellow-600">Rating: {r.rating}★</p>
-        <p className="text-xs text-gray-600">Comment: {r.comment}</p>
-      </div>))}
-    </div>
-  )
-}
-
-// ===== RATING MODAL =====
-const RatingModal = ({request,onClose,setRequests})=>{
-  const [rating,setRating]=useState(0); const [comment,setComment]=useState('');
-  const handleSubmit=()=>{
-    if(rating===0){ alert('Select rating'); return; }
-    const updated=requests.map(r=>r.id===request.id?{...r,rating,comment,completed:true}:r);
-    setLocal('requests',updated);
-    onClose();
-  }
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-black">Rate Service</h3>
-          <button onClick={onClose} className="text-gray-500">✕</button>
-        </div>
-        <p className="text-sm text-gray-600 mb-2">Request: {request.issue}</p>
-        <div className="flex justify-center gap-2 mb-4">
-          {[1,2,3,4,5].map(star=>(<button key={star} onClick={()=>setRating(star)} className={`text-3xl ${rating>=star?'text-yellow-500':'text-gray-300'}`}>★</button>))}
-        </div>
-        <textarea placeholder="Comments..." className="w-full p-2 border rounded mb-4" value={comment} onChange={e=>setComment(e.target.value)} rows="3"/>
-        <button className="w-full bg-yellow-500 py-2 rounded font-bold hover:bg-yellow-600" onClick={handleSubmit}>Submit</button>
-      </div>
-    </div>
-  )
-}
-
-ReactDOM.createRoot(document.getElementById('root')).render(<ChapTapAutofix />);
-
-</script>
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
 </body>
 </html>
+
 
 
