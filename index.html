@@ -13,182 +13,182 @@
 </head>
 
 <body class="bg-gray-100">
-<div id="root"></div>
+  <div id="root"></div>
 
-<script type="text/babel">
-const { useState, useEffect, useRef } = React;
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-/* =========================
-   MAIN APP
-========================= */
-const ChapTapAutofix = () => {
-  const [userType, setUserType] = useState('user');
-  const [requests, setRequests] = useState([]);
-  const [showRating, setShowRating] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState(null);
+    /* =========================
+       MAIN APP
+    ========================= */
+    const ChapTapAutofix = () => {
+      const [userType, setUserType] = useState('user');
+      const [requests, setRequests] = useState([]);
+      const [showRating, setShowRating] = useState(false);
+      const [selectedRequest, setSelectedRequest] = useState(null);
 
-  /* SAMPLE REQUEST (for testing) */
-  useEffect(() => {
-    setRequests([
-      {
-        id: 1,
-        issue: 'Flat tyre',
-        timestamp: new Date().toLocaleString()
-      }
-    ]);
-  }, []);
+      /* Seed sample data (safe, deterministic) */
+      useEffect(() => {
+        setRequests([
+          {
+            id: 1,
+            issue: 'Flat tyre',
+            timestamp: new Date().toLocaleString()
+          }
+        ]);
+      }, []);
 
-  return (
-    <div className="min-h-screen p-4 max-w-md mx-auto">
+      return (
+        <div className="min-h-screen p-4 max-w-md mx-auto">
 
-      {/* HEADER */}
-      <header className="bg-black text-yellow-400 p-4 rounded-xl text-center font-black mb-6">
-        ⚫🟡 chapTAP Autofix
-      </header>
+          {/* HEADER */}
+          <header className="bg-black text-yellow-400 p-4 rounded-xl text-center font-black mb-6">
+            ⚫🟡 chapTAP Autofix
+          </header>
 
-      {/* USER / ADMIN TOGGLE */}
-      <div className="flex justify-center gap-2 mb-6">
-        <button
-          onClick={() => setUserType('user')}
-          className={`px-6 py-2 rounded-lg font-bold ${
-            userType === 'user'
-              ? 'bg-yellow-500 text-black'
-              : 'bg-gray-700 text-white'
-          }`}
-        >
-          User
-        </button>
+          {/* USER / ADMIN TOGGLE */}
+          <div className="flex justify-center gap-2 mb-6">
+            <button
+              onClick={() => setUserType('user')}
+              className={`px-6 py-2 rounded-lg font-bold ${
+                userType === 'user'
+                  ? 'bg-yellow-500 text-black'
+                  : 'bg-gray-700 text-white'
+              }`}
+            >
+              User
+            </button>
 
-        <button
-          onClick={() => setUserType('admin')}
-          className={`px-6 py-2 rounded-lg font-bold ${
-            userType === 'admin'
-              ? 'bg-gray-800 text-white'
-              : 'bg-gray-700 text-white'
-          }`}
-        >
-          Admin
-        </button>
-      </div>
+            <button
+              onClick={() => setUserType('admin')}
+              className={`px-6 py-2 rounded-lg font-bold ${
+                userType === 'admin'
+                  ? 'bg-gray-800 text-white'
+                  : 'bg-gray-700 text-white'
+              }`}
+            >
+              Admin
+            </button>
+          </div>
 
-      {/* REQUEST HISTORY */}
-      <div className="space-y-3">
-        <h2 className="font-black text-lg mb-2">My Request History</h2>
+          {/* REQUEST HISTORY */}
+          <div className="space-y-3">
+            <h2 className="font-black text-lg mb-2">My Request History</h2>
 
-        {requests.length === 0 && (
-          <p className="text-center text-gray-500">No requests yet</p>
-        )}
+            {requests.length === 0 && (
+              <p className="text-center text-gray-500">No requests yet</p>
+            )}
 
-        {requests.map(r => (
-          <div
-            key={r.id}
-            className="bg-white p-4 rounded-xl shadow flex justify-between items-center"
-          >
-            <div>
-              <p className="font-bold">{r.issue}</p>
-              <p className="text-xs text-gray-500">{r.timestamp}</p>
+            {requests.map(request => (
+              <div
+                key={request.id}
+                className="bg-white p-4 rounded-xl shadow flex justify-between items-center"
+              >
+                <div>
+                  <p className="font-bold">{request.issue}</p>
+                  <p className="text-xs text-gray-500">{request.timestamp}</p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setSelectedRequest(request);
+                    setShowRating(true);
+                  }}
+                  className="bg-yellow-500 px-3 py-1 rounded-full text-xs font-bold hover:bg-yellow-600"
+                >
+                  Rate
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* RATING MODAL */}
+          {showRating && selectedRequest && (
+            <RatingModal
+              request={selectedRequest}
+              onClose={() => {
+                setShowRating(false);
+                setSelectedRequest(null);
+              }}
+            />
+          )}
+        </div>
+      );
+    };
+
+    /* =========================
+       RATING MODAL
+    ========================= */
+    const RatingModal = ({ request, onClose }) => {
+      const [rating, setRating] = useState(0);
+      const [comment, setComment] = useState('');
+
+      const handleSubmit = () => {
+        if (rating === 0) {
+          alert('Please select a rating');
+          return;
+        }
+        // rating + comment ready for persistence/API
+        onClose();
+      };
+
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-black">Rate Service</h3>
+              <button onClick={onClose} className="text-gray-500">✕</button>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-2">
+              Request: {request.issue}
+            </p>
+
+            <div className="flex justify-center gap-2 mb-4">
+              {[1, 2, 3, 4, 5].map(star => (
+                <button
+                  key={star}
+                  onClick={() => setRating(star)}
+                  className={`text-3xl ${
+                    rating >= star ? 'text-yellow-500' : 'text-gray-300'
+                  }`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+
+            <div className="mb-4">
+              <label className="block font-bold mb-2">
+                Comments (Optional)
+              </label>
+              <textarea
+                value={comment}
+                onChange={e => setComment(e.target.value)}
+                placeholder="Share your experience..."
+                className="w-full p-3 border rounded-lg"
+                rows="3"
+              />
             </div>
 
             <button
-              onClick={() => {
-                setSelectedRequest(r);
-                setShowRating(true);
-              }}
-              className="bg-yellow-500 px-3 py-1 rounded-full text-xs font-bold hover:bg-yellow-600"
+              onClick={handleSubmit}
+              className="w-full bg-yellow-500 text-black py-3 rounded-lg font-bold hover:bg-yellow-600"
             >
-              Rate
+              Submit Rating
             </button>
+
           </div>
-        ))}
-      </div>
-
-      {/* RATING MODAL */}
-      {showRating && selectedRequest && (
-        <RatingModal
-          request={selectedRequest}
-          onClose={() => {
-            setShowRating(false);
-            setSelectedRequest(null);
-          }}
-        />
-      )}
-    </div>
-  );
-};
-
-/* =========================
-   RATING MODAL (MERGED)
-========================= */
-const RatingModal = ({ request, onClose }) => {
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
-
-  const handleSubmit = () => {
-    if (rating === 0) {
-      alert('Please select a rating');
-      return;
-    }
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-black">Rate Service</h3>
-          <button onClick={onClose} className="text-gray-500">✕</button>
         </div>
+      );
+    };
 
-        <p className="text-sm text-gray-600 mb-2">
-          Request: {request.issue}
-        </p>
-
-        <div className="flex justify-center gap-2 mb-4">
-          {[1,2,3,4,5].map(star => (
-            <button
-              key={star}
-              onClick={() => setRating(star)}
-              className={`text-3xl ${
-                rating >= star ? 'text-yellow-500' : 'text-gray-300'
-              }`}
-            >
-              ★
-            </button>
-          ))}
-        </div>
-
-        <div className="mb-4">
-          <label className="block font-bold mb-2">
-            Comments (Optional)
-          </label>
-
-          <textarea
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-            placeholder="Share your experience..."
-            className="w-full p-3 border rounded-lg"
-            rows="3"
-          />
-        </div>
-
-        <button
-          onClick={handleSubmit}
-          className="w-full bg-yellow-500 text-black py-3 rounded-lg font-bold hover:bg-yellow-600"
-        >
-          Submit Rating
-        </button>
-
-      </div>
-    </div>
-  );
-};
-
-/* =========================
-   REACT 18 ROOT
-========================= */
-ReactDOM.createRoot(document.getElementById('root'))
-  .render(<ChapTapAutofix />);
-</script>
+    /* =========================
+       REACT 18 ROOT
+    ========================= */
+    ReactDOM.createRoot(document.getElementById('root'))
+      .render(<ChapTapAutofix />);
+  </script>
 </body>
 </html>
