@@ -13,36 +13,40 @@
 <div id="root"></div>
 
 <script type="text/babel">
+
 const { useState, useEffect } = React;
-const getLocal = (k, d)=>{ const v=localStorage.getItem(k); return v?v:JSON.stringify(d); };
+
+// ===== LocalStorage Helpers =====
+const getLocal = (k,d)=>{ const v=localStorage.getItem(k); return v?v:JSON.stringify(d); };
 const setLocal = (k,v)=>localStorage.setItem(k,JSON.stringify(v));
+
+// ===== Distance Helper =====
 const toRad = v=>v*Math.PI/180;
 const distanceKm = (lat1, lon1, lat2, lon2)=>{ const R=6371; const dLat=toRad(lat2-lat1); const dLon=toRad(lon2-lon1); const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2; const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); return R*c; }
 
+// ===== MAIN APP =====
 const ChapTapAutofix = () => {
   const [userType,setUserType]=useState('user');
+  const [pinVerified,setPinVerified]=useState(false);
+  const [showPin,setShowPin]=useState(false);
+
   const [requests,setRequests]=useState(JSON.parse(getLocal('requests',[])));
   const [providers,setProviders]=useState(JSON.parse(getLocal('providers',[])));
   const [selectedRequest,setSelectedRequest]=useState(null);
   const [showRating,setShowRating]=useState(false);
-  const [showPin,setShowPin]=useState(false);
-  const [pinVerified,setPinVerified]=useState(false);
 
   useEffect(()=>setLocal('requests',requests),[requests]);
   useEffect(()=>setLocal('providers',providers),[providers]);
 
   const handleRoleChange=(type)=>{
-    if(type==='admin'){
-      setShowPin(true); // show PIN modal
-    } else {
-      setUserType(type);
-    }
-  };
+    if(type==='admin'){ setShowPin(true); }
+    else{ setUserType(type); }
+  }
 
   const verifyPin=(pin)=>{
-    if(pin==='1234'){ setPinVerified(true); setUserType('admin'); setShowPin(false);}
+    if(pin==='1234'){ setPinVerified(true); setUserType('admin'); setShowPin(false); }
     else{ alert('Incorrect PIN'); setPinVerified(false); setShowPin(false); }
-  };
+  }
 
   return (
     <div className="min-h-screen p-4 max-w-md mx-auto">
@@ -61,16 +65,16 @@ const ChapTapAutofix = () => {
         ))}
       </div>
 
-      {/* VIEW */}
-      {userType==='user' && <UserView requests={requests} setRequests={setRequests} setSelectedRequest={setSelectedRequest} setShowRating={setShowRating} />}
-      {userType==='provider' && <ProviderView requests={requests} providers={providers} setRequests={setRequests} />}
-      {userType==='admin' && pinVerified && <AdminView requests={requests} providers={providers} setProviders={setProviders} />}
+      {/* VIEWS */}
+      {userType==='user' && <UserView requests={requests} setRequests={setRequests} setSelectedRequest={setSelectedRequest} setShowRating={setShowRating}/>}
+      {userType==='provider' && <ProviderView requests={requests} providers={providers} setRequests={setRequests} setProviders={setProviders}/>}
+      {userType==='admin' && pinVerified && <AdminView requests={requests} providers={providers} setProviders={setProviders}/>}
 
       {/* RATING MODAL */}
-      {showRating && selectedRequest && <RatingModal request={selectedRequest} onClose={()=>setShowRating(false)} setRequests={setRequests} />}
+      {showRating && selectedRequest && <RatingModal request={selectedRequest} onClose={()=>setShowRating(false)} setRequests={setRequests}/>}
 
       {/* PIN MODAL */}
-      {showPin && <AdminPinModal onVerify={verifyPin} onClose={()=>setShowPin(false)} />}
+      {showPin && <AdminPinModal onVerify={verifyPin} onClose={()=>setShowPin(false)}/>}
     </div>
   );
 };
@@ -96,12 +100,14 @@ const AdminPinModal = ({onVerify,onClose})=>{
 const UserView = ({ requests,setRequests,setSelectedRequest,setShowRating })=>{
   const [issue,setIssue]=useState(''); const [other,setOther]=useState(''); const [loc,setLoc]=useState(''); const [coords,setCoords]=useState({lat:null,lng:null});
   useEffect(()=>{ if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(pos=>setCoords({lat:pos.coords.latitude,lng:pos.coords.longitude})); }},[]);
+  
   const handleRequest=()=>{
     const finalIssue = issue==='Other'?other:issue;
     if(!finalIssue || !loc){ alert('Issue & location required'); return; }
     const newReq={id:Date.now(),issue:finalIssue,otherIssue:issue==='Other'?other:'',locationName:loc,lat:coords.lat,lng:coords.lng,timestamp:new Date().toLocaleString(),completed:false,assignedTo:null,rating:null,comment:""};
     setRequests([newReq,...requests]); setIssue(''); setOther(''); setLoc(''); alert('Request submitted'); 
   }
+
   return (
     <div className="space-y-4">
       <h2 className="font-black text-lg">🚨 Request Help</h2>
@@ -114,91 +120,143 @@ const UserView = ({ requests,setRequests,setSelectedRequest,setShowRating })=>{
 
       <h3 className="font-bold text-lg mt-4">📋 Request History</h3>
       {requests.length===0 && <p className="text-gray-500 text-sm">No requests yet.</p>}
-      {requests.map(r=>(
-        <div key={r.id} className="bg-white p-3 rounded shadow flex justify-between items-center">
-          <div>
+      {requests.map(r=>{
+        const [open,setOpen]=useState(false);
+        return (
+        <div key={r.id} className="bg-white p-3 rounded shadow mb-2">
+          <div className="flex justify-between cursor-pointer" onClick={()=>setOpen(!open)}>
             <p className="font-bold">{r.issue}</p>
-            <p className="text-xs text-gray-500">{r.locationName}</p>
             <p className="text-xs text-gray-500">{r.timestamp}</p>
-            {r.rating && <p className="text-xs text-green-600">Rated: {r.rating}★</p>}
           </div>
-          {!r.completed && <button className="bg-yellow-500 px-2 py-1 rounded text-xs hover:bg-yellow-600" onClick={()=>{setSelectedRequest(r); setShowRating(true)}}>Rate</button>}
+          {open && <div className="mt-2 text-xs text-gray-600">
+            <p>Location: {r.locationName}</p>
+            <p>Assigned Provider: {r.assignedTo || 'Not assigned'}</p>
+            {r.completed && <p>Rating: {r.rating}★</p>}
+            {r.comment && <p>Comment: {r.comment}</p>}
+            {!r.completed && r.assignedTo && <button className="bg-yellow-500 px-2 py-1 rounded mt-2 hover:bg-yellow-600" onClick={()=>{setSelectedRequest(r); setShowRating(true)}}>Rate</button>}
+          </div>}
         </div>
-      ))}
+      )})}
     </div>
   )
 };
 
-// ====== PROVIDER VIEW ====== (same as previous, nearby requests, accept, progress)
-const ProviderView = ({ requests, providers, setRequests }) => {
+// ===== PROVIDER VIEW =====
+const ProviderView = ({ requests, providers, setRequests,setProviders })=>{
   const [myLat,setMyLat]=useState(null); const [myLng,setMyLng]=useState(null);
-  useEffect(()=>{ if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(pos=>{ setMyLat(pos.coords.latitude); setMyLng(pos.coords.longitude); }); }},[]);
-  const acceptRequest = (id)=>{ setRequests(requests.map(r=>r.id===id?{...r,assignedTo:'You'}:r)); };
+  const [registering,setRegistering]=useState(false);
+  const [regForm,setRegForm]=useState({name:'',phone:'',services:[],experience:'',idNumber:'',lat:null,lng:null});
+
+  useEffect(()=>{ if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(pos=>{ setMyLat(pos.coords.latitude); setMyLng(pos.coords.longitude); setRegForm({...regForm,lat:pos.coords.latitude,lng:pos.coords.longitude}); }); }},[]);
+
+  const acceptRequest=(id)=>{ setRequests(requests.map(r=>r.id===id?{...r,assignedTo:'You'}:r)); };
+  const completeRequest=(id)=>{ setRequests(requests.map(r=>r.id===id?{...r,completed:true}:r)); };
+
   const nearby=requests.filter(r=>!r.completed && !r.assignedTo && (myLat&&myLng&&r.lat&&r.lng?distanceKm(myLat,myLng,r.lat,r.lng)<=10:true));
-  return (<div className="space-y-4">
-    <h2 className="font-black text-lg">🛠️ Nearby Requests</h2>
-    {nearby.length===0 && <p className="text-gray-500 text-sm">No open requests nearby.</p>}
-    {nearby.map(r=>(<div key={r.id} className="bg-white p-3 rounded shadow flex justify-between items-center">
-      <div><p className="font-bold">{r.issue}</p><p className="text-xs text-gray-500">{r.locationName}</p><p className="text-xs text-gray-500">{r.timestamp}</p></div>
-      <button className="bg-green-500 px-2 py-1 rounded text-xs text-white hover:bg-green-600" onClick={()=>acceptRequest(r.id)}>Accept</button>
-    </div>))}
-    <h3 className="font-bold mt-4">📝 My Assigned Requests</h3>
-    {requests.filter(r=>r.assignedTo==='You' && !r.completed).length===0 && <p className="text-gray-500 text-sm">No accepted requests in progress.</p>}
-    {requests.filter(r=>r.assignedTo==='You' && !r.completed).map(r=>(<div key={r.id} className="bg-white p-3 rounded shadow">
-      <p className="font-bold">{r.issue}</p><p className="text-xs text-gray-500">{r.locationName}</p><p className="text-xs text-gray-500">{r.timestamp}</p>
-      <span className="text-yellow-600 font-bold text-xs">IN PROGRESS</span>
-    </div>))}
-  </div>);
+
+  const handleRegister=()=>{
+    if(!regForm.name || !regForm.phone || regForm.services.length===0){ alert('Fill all required fields'); return; }
+    const newProvider={...regForm,id:Date.now(),approved:false};
+    setProviders([...providers,newProvider]); alert('Registration submitted! Waiting for Admin approval.'); setRegistering(false);
+  }
+
+  const toggleService=(service)=>{
+    const updated=regForm.services.includes(service)?regForm.services.filter(s=>s!==service):[...regForm.services,service];
+    setRegForm({...regForm,services:updated});
+  }
+
+  return (
+    <div className="space-y-4">
+      {!registering && <button className="w-full bg-yellow-500 py-2 rounded font-bold hover:bg-yellow-600" onClick={()=>setRegistering(true)}>Register as Service Provider</button>}
+      {registering && <div className="bg-white p-3 rounded shadow space-y-2">
+        <input type="text" placeholder="Name" className="w-full p-2 border rounded" value={regForm.name} onChange={e=>setRegForm({...regForm,name:e.target.value})}/>
+        <input type="text" placeholder="Phone" className="w-full p-2 border rounded" value={regForm.phone} onChange={e=>setRegForm({...regForm,phone:e.target.value})}/>
+        <input type="text" placeholder="Experience (years)" className="w-full p-2 border rounded" value={regForm.experience} onChange={e=>setRegForm({...regForm,experience:e.target.value})}/>
+        <input type="text" placeholder="ID/License Number" className="w-full p-2 border rounded" value={regForm.idNumber} onChange={e=>setRegForm({...regForm,idNumber:e.target.value})}/>
+        <div className="flex flex-wrap gap-2">
+          {['Flat tyre','Battery','Overheating','Accident','Fuel'].map(s=>(
+            <button key={s} className={`px-2 py-1 rounded ${regForm.services.includes(s)?'bg-yellow-500 text-black':'bg-gray-200'}`} onClick={()=>toggleService(s)}>{s}</button>
+          ))}
+        </div>
+        <button className="w-full bg-green-500 py-2 rounded font-bold text-white hover:bg-green-600" onClick={handleRegister}>Submit Registration</button>
+      </div>}
+
+      <h2 className="font-black text-lg">🛠️ Nearby Requests</h2>
+      {nearby.length===0 && <p className="text-gray-500 text-sm">No open requests nearby.</p>}
+      {nearby.map(r=>(<div key={r.id} className="bg-white p-3 rounded shadow flex justify-between items-center mb-2">
+        <div><p className="font-bold">{r.issue}</p><p className="text-xs text-gray-500">{r.locationName}</p><p className="text-xs text-gray-500">{r.timestamp}</p></div>
+        <button className="bg-green-500 px-2 py-1 rounded text-xs text-white hover:bg-green-600" onClick={()=>acceptRequest(r.id)}>Accept</button>
+      </div>))}
+
+      <h3 className="font-bold mt-4">📝 My Assigned Requests</h3>
+      {requests.filter(r=>r.assignedTo==='You' && !r.completed).length===0 && <p className="text-gray-500 text-sm">No accepted requests in progress.</p>}
+      {requests.filter(r=>r.assignedTo==='You' && !r.completed).map(r=>(<div key={r.id} className="bg-white p-3 rounded shadow mb-2 flex justify-between items-center">
+        <div><p className="font-bold">{r.issue}</p><p className="text-xs text-gray-500">{r.locationName}</p><p className="text-xs text-gray-500">{r.timestamp}</p></div>
+        <button className="bg-yellow-500 px-2 py-1 rounded text-xs hover:bg-yellow-600" onClick={()=>completeRequest(r.id)}>Mark Completed</button>
+      </div>))}
+    </div>
+  )
 };
 
-// ====== ADMIN VIEW ======
-const AdminView = ({ requests, providers, setProviders }) => {
+// ===== ADMIN VIEW =====
+const AdminView = ({ requests, providers, setProviders })=>{
   const handleApprove=(id,status)=>setProviders(providers.map(p=>p.id===id?{...p,approved:status}:p));
-  return (<div className="space-y-4">
-    <h2 className="font-black text-lg">👥 Admin Dashboard</h2>
-    <h3 className="font-bold mt-2">Pending Provider Approvals</h3>
-    {providers.filter(p=>!p.approved).length===0 && <p className="text-gray-500 text-sm">No pending providers.</p>}
-    {providers.filter(p=>!p.approved).map(p=>(<div key={p.id} className="bg-white p-3 rounded shadow flex justify-between items-center">
-      <div><p className="font-bold">{p.name}</p><p className="text-xs text-gray-500">{p.services.join(', ')}</p></div>
-      <div className="flex gap-2">
-        <button className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600" onClick={()=>handleApprove(p.id,true)}>Approve</button>
-        <button className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600" onClick={()=>handleApprove(p.id,false)}>Reject</button>
-      </div>
-    </div>))}
-    <h3 className="font-bold mt-4">Completed Jobs</h3>
-    {requests.filter(r=>r.completed).length===0 && <p className="text-gray-500 text-sm">No completed jobs yet.</p>}
-    {requests.filter(r=>r.completed).map(r=>(<div key={r.id} className="bg-white p-3 rounded shadow flex flex-col">
-      <p className="font-bold">{r.issue}</p><p className="text-xs text-gray-500">{r.locationName}</p><p className="text-xs text-gray-500">{r.timestamp}</p>
-      <p className="text-xs text-green-600">Provider: {r.assignedTo}</p>
-      <p className="text-xs text-yellow-600">Rating: {r.rating}★</p>
-      <p className="text-xs text-gray-600">Comment: {r.comment}</p>
-    </div>))}
-  </div>);
-};
+  return (
+    <div className="space-y-4">
+      <h2 className="font-black text-lg">👥 Admin Dashboard</h2>
+      <h3 className="font-bold mt-2">Pending Provider Approvals</h3>
+      {providers.filter(p=>!p.approved).length===0 && <p className="text-gray-500 text-sm">No pending providers.</p>}
+      {providers.filter(p=>!p.approved).map(p=>(<div key={p.id} className="bg-white p-3 rounded shadow flex justify-between items-center mb-2">
+        <div><p className="font-bold">{p.name}</p><p className="text-xs text-gray-500">{p.services.join(', ')}</p></div>
+        <div className="flex gap-2">
+          <button className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600" onClick={()=>handleApprove(p.id,true)}>Approve</button>
+          <button className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600" onClick={()=>handleApprove(p.id,false)}>Reject</button>
+        </div>
+      </div>))}
+      
+      <h3 className="font-bold mt-4">Completed Jobs</h3>
+      {requests.filter(r=>r.completed).length===0 && <p className="text-gray-500 text-sm">No completed jobs yet.</p>}
+      {requests.filter(r=>r.completed).map(r=>(<div key={r.id} className="bg-white p-3 rounded shadow mb-2 flex flex-col">
+        <p className="font-bold">{r.issue}</p><p className="text-xs text-gray-500">{r.locationName}</p><p className="text-xs text-gray-500">{r.timestamp}</p>
+        <p className="text-xs text-green-600">Provider: {r.assignedTo}</p>
+        <p className="text-xs text-yellow-600">Rating: {r.rating}★</p>
+        <p className="text-xs text-gray-600">Comment: {r.comment}</p>
+      </div>))}
+    </div>
+  )
+}
 
-// ====== RATING MODAL ======
+// ===== RATING MODAL =====
 const RatingModal = ({request,onClose,setRequests})=>{
   const [rating,setRating]=useState(0); const [comment,setComment]=useState('');
-  const handleSubmit=()=>{ if(rating===0){alert('Select rating');return;} const updated=requests.map(r=>r.id===request.id?{...r,rating,comment,completed:true}:r); setLocal('requests',updated); onClose(); };
-  return (<div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-black">Rate Service</h3>
-        <button onClick={onClose} className="text-gray-500">✕</button>
+  const handleSubmit=()=>{
+    if(rating===0){ alert('Select rating'); return; }
+    const updated=requests.map(r=>r.id===request.id?{...r,rating,comment,completed:true}:r);
+    setLocal('requests',updated);
+    onClose();
+  }
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-black">Rate Service</h3>
+          <button onClick={onClose} className="text-gray-500">✕</button>
+        </div>
+        <p className="text-sm text-gray-600 mb-2">Request: {request.issue}</p>
+        <div className="flex justify-center gap-2 mb-4">
+          {[1,2,3,4,5].map(star=>(<button key={star} onClick={()=>setRating(star)} className={`text-3xl ${rating>=star?'text-yellow-500':'text-gray-300'}`}>★</button>))}
+        </div>
+        <textarea placeholder="Comments..." className="w-full p-2 border rounded mb-4" value={comment} onChange={e=>setComment(e.target.value)} rows="3"/>
+        <button className="w-full bg-yellow-500 py-2 rounded font-bold hover:bg-yellow-600" onClick={handleSubmit}>Submit</button>
       </div>
-      <p className="text-sm text-gray-600 mb-2">Request: {request.issue}</p>
-      <div className="flex justify-center gap-2 mb-4">{[1,2,3,4,5].map(star=>(<button key={star} onClick={()=>setRating(star)} className={`text-3xl ${rating>=star?'text-yellow-500':'text-gray-300'}`}>★</button>))}</div>
-      <div className="mb-4">
-        <label className="block font-bold mb-2">Comments (Optional)</label>
-        <textarea value={comment} onChange={e=>setComment(e.target.value)} placeholder="Share your experience..." className="w-full p-3 border rounded-lg" rows="3"/>
-      </div>
-      <button onClick={handleSubmit} className="w-full bg-yellow-500 text-black py-3 rounded-lg font-bold hover:bg-yellow-600">Submit Rating</button>
     </div>
-  </div>);
+  )
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<ChapTapAutofix />);
+
 </script>
 </body>
 </html>
+
 
