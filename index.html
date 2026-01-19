@@ -14,7 +14,6 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
     
-    // Helper function to calculate distance between two coordinates
     const calculateDistance = (lat1, lon1, lat2, lon2) => {
       const R = 6371;
       const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -65,7 +64,7 @@
               setLocationLoading(false);
               addNotif('Location detected successfully!');
             },
-            (error) => {
+            () => {
               setLocationLoading(false);
               alert('Unable to get location. Please enable GPS.');
             }
@@ -109,7 +108,8 @@
 
       return (
         <div className="min-h-screen bg-gray-50 pb-20">
-          ... [UNCHANGED CONTENT CONTINUES EXACTLY AS PROVIDED]
+          {/* PART 2 CONTENT */}
+          {/* PART 3 CONTENT */}
         </div>
       );
     };
