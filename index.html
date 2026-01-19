@@ -10,111 +10,107 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="text/babel">
-    const { useState, useEffect } = React;
-    
-    const calculateDistance = (lat1, lon1, lat2, lon2) => {
-      const R = 6371;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return (R * c).toFixed(1);
-    };
+<div id="root"></div>
 
-    const Phone = () => <span>📞</span>;
-    const Message = () => <span>💬</span>;
-    const Star = () => <span>⭐</span>;
-    const Pin = () => <span>📍</span>;
-    const Alert = () => <span>🚨</span>;
-    const Bell = () => <span>🔔</span>;
-    const Toggle = ({ on }) => <span>{on ? '🟢' : '🔴'}</span>;
-    const Camera = () => <span>📸</span>;
-    const Map = () => <span>🗺️</span>;
+<script type="text/babel">
+const { useState, useEffect } = React;
 
-    const App = () => {
-      const [role, setRole] = useState('user');
-      const [view, setView] = useState('home');
-      const [userLocation, setUserLocation] = useState(null);
-      const [locationLoading, setLocationLoading] = useState(false);
-      const [providers, setProviders] = useState([
-        {id:1, name:'Mike Garage', phone:'0721122334', services:['Towing','Tyre'], location:'Nyali', lat:-4.0435, lng:39.6682, rating:4.5, status:'Approved', available:true},
-        {id:2, name:'Quick Fix Auto', phone:'0733445566', services:['Battery'], location:'CBD', lat:-4.0559, lng:39.6630, rating:4.3, status:'Approved', available:true}
-      ]);
-      const [requests, setRequests] = useState([]);
-      const [showEmergency, setShowEmergency] = useState(false);
-      const [showAdminAuth, setShowAdminAuth] = useState(false);
-      const [showProviderAuth, setShowProviderAuth] = useState(false);
-      const [adminPin, setAdminPin] = useState('');
-      const [providerPhone, setProviderPhone] = useState('');
-      const [currentProviderId, setCurrentProviderId] = useState(null);
-      const [notifications, setNotifications] = useState([]);
-      const [emergencyData, setEmergencyData] = useState({issue:'', location:'', type:'roadside', customIssue:'', photos:[]});
-      const [photoPreview, setPhotoPreview] = useState([]);
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) *
+      Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return (R * c).toFixed(1);
+};
 
-      const addNotif = (msg) => setNotifications([{id:Date.now(), msg, time:new Date().toLocaleTimeString()}, ...notifications]);
+const Phone = () => <span>📞</span>;
+const Message = () => <span>💬</span>;
+const Star = () => <span>⭐</span>;
+const Pin = () => <span>📍</span>;
+const Alert = () => <span>🚨</span>;
+const Bell = () => <span>🔔</span>;
+const Toggle = ({ on }) => <span>{on ? "🟢" : "🔴"}</span>;
+const Camera = () => <span>📸</span>;
+const Map = () => <span>🗺️</span>;
 
-      const getUserLocation = () => {
-        setLocationLoading(true);
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              setUserLocation({lat: position.coords.latitude, lng: position.coords.longitude});
-              setLocationLoading(false);
-              addNotif('Location detected successfully!');
-            },
-            () => {
-              setLocationLoading(false);
-              alert('Unable to get location. Please enable GPS.');
-            }
-          );
-        } else {
-          setLocationLoading(false);
-          alert('Geolocation not supported by your browser');
-        }
-      };
+const App = () => {
+  const [role, setRole] = useState("user");
+  const [view, setView] = useState("home");
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [providers, setProviders] = useState([
+    { id: 1, name: "Mike Garage", phone: "0721122334", services: ["Towing", "Tyre"], location: "Nyali", lat: -4.0435, lng: 39.6682, rating: 4.5, status: "Approved", available: true },
+    { id: 2, name: "Quick Fix Auto", phone: "0733445566", services: ["Battery"], location: "CBD", lat: -4.0559, lng: 39.663, rating: 4.3, status: "Approved", available: true }
+  ]);
+  const [requests, setRequests] = useState([]);
+  const [showEmergency, setShowEmergency] = useState(false);
+  const [showAdminAuth, setShowAdminAuth] = useState(false);
+  const [showProviderAuth, setShowProviderAuth] = useState(false);
+  const [adminPin, setAdminPin] = useState("");
+  const [providerPhone, setProviderPhone] = useState("");
+  const [currentProviderId, setCurrentProviderId] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [emergencyData, setEmergencyData] = useState({ issue: "", location: "", type: "roadside", customIssue: "", photos: [] });
+  const [photoPreview, setPhotoPreview] = useState([]);
 
-      const handlePhotoUpload = (e) => {
-        const files = Array.from(e.target.files);
-        const previews = files.map(file => URL.createObjectURL(file));
-        setPhotoPreview(previews);
-        setEmergencyData({...emergencyData, photos: files.map(f => f.name)});
-      };
+  const addNotif = (msg) =>
+    setNotifications([{ id: Date.now(), msg, time: new Date().toLocaleTimeString() }, ...notifications]);
 
-      const submitEmergency = () => {
-        if(!emergencyData.issue || !emergencyData.location) return alert('Fill all fields');
-        const finalIssue = emergencyData.issue === 'Other' ? emergencyData.customIssue : emergencyData.issue;
-        const req = {id:Date.now(), issue:finalIssue, location:emergencyData.location, type:emergencyData.type, photos:emergencyData.photos, userLat:userLocation?.lat, userLng:userLocation?.lng, status:'Open', timestamp:new Date().toLocaleString()};
-        setRequests([req, ...requests]);
-        addNotif('Emergency request submitted!');
-        setShowEmergency(false);
-        setEmergencyData({issue:'', location:'', type:'roadside', customIssue:'', photos:[]});
-        setPhotoPreview([]);
-      };
+  const getUserLocation = () => {
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocationLoading(false);
+      },
+      () => {
+        setLocationLoading(false);
+        alert("Enable GPS");
+      }
+    );
+  };
 
-      const loginAdmin = () => {if(adminPin === '1234') {setRole('admin'); setShowAdminAuth(false);} else alert('Wrong PIN');};
-      const loginProvider = () => {const p = providers.find(x => x.phone === providerPhone && x.status === 'Approved'); if(p) {setRole('provider'); setCurrentProviderId(p.id); setShowProviderAuth(false);} else alert('Provider not found');};
-      const acceptRequest = (id) => {setRequests(requests.map(r => r.id === id ? {...r, status:'In Progress', providerId:currentProviderId} : r)); addNotif('Request accepted!');};
-      const completeRequest = (id) => {setRequests(requests.map(r => r.id === id ? {...r, status:'Completed'} : r)); addNotif('Job completed!');};
-      const toggleAvailable = () => {setProviders(providers.map(p => p.id === currentProviderId ? {...p, available:!p.available} : p));};
+  useEffect(() => {
+    getUserLocation();
+  }, []);
 
-      const currentProvider = providers.find(p => p.id === currentProviderId);
-      const myJobs = requests.filter(r => r.providerId === currentProviderId);
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {/* HEADER */}
+      <div className="bg-gradient-to-r from-black to-gray-900 border-b-4 border-yellow-500 p-6 text-center sticky top-0 z-50">
+        <h1 className="text-3xl font-black">
+          <span className="text-yellow-400">chap</span>
+          <span className="text-white">TAP</span>
+        </h1>
+        <p className="text-yellow-200 text-xs">Autofix - Premium Roadside Assistance</p>
+      </div>
 
-      useEffect(() => {
-        getUserLocation();
-      }, []);
+      {/* BODY */}
+      <div className="max-w-md mx-auto p-4">
+        <button
+          onClick={() => setShowEmergency(true)}
+          className="w-full bg-red-600 text-white py-4 rounded-xl font-black text-lg"
+        >
+          <Alert /> EMERGENCY HELP
+        </button>
+      </div>
 
-      return (
-        <div className="min-h-screen bg-gray-50 pb-20">
-          {/* PART 2 CONTENT */}
-          {/* PART 3 CONTENT */}
-        </div>
-      );
-    };
+      {/* FOOTER */}
+      <div className="bg-gradient-to-r from-black to-gray-900 border-t-4 border-yellow-500 p-4 text-center fixed bottom-0 left-0 right-0">
+        <p className="font-black text-yellow-400">⚫🟡 chapTAP Autofix</p>
+        <p className="text-xs text-yellow-200">📞 support@chaptapautofix.co.ke</p>
+      </div>
+    </div>
+  );
+};
 
-    ReactDOM.render(<App />, document.getElementById('root'));
-  </script>
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
 </body>
 </html>
