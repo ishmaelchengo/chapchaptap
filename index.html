@@ -13,8 +13,6 @@
   <div id="root"></div>
   <script type="text/babel">
     const { useState, useEffect } = React;
-
-    // Simple Icons
     const Phone = () => <span>📞</span>;
     const Message = () => <span>💬</span>;
     const Star = () => <span>⭐</span>;
@@ -26,10 +24,7 @@
     const App = () => {
       const [role, setRole] = useState('user');
       const [view, setView] = useState('home');
-      const [providers, setProviders] = useState([
-        {id:1, name:'Mike Garage', phone:'0721122334', services:['Towing','Tyre'], location:'Nyali', rating:4.5, status:'Approved', available:true},
-        {id:2, name:'Quick Fix Auto', phone:'0733445566', services:['Battery'], location:'CBD', rating:4.3, status:'Approved', available:true}
-      ]);
+      const [providers, setProviders] = useState([{id:1, name:'Mike Garage', phone:'0721122334', services:['Towing','Tyre'], location:'Nyali', rating:4.5, status:'Approved', available:true},{id:2, name:'Quick Fix Auto', phone:'0733445566', services:['Battery'], location:'CBD', rating:4.3, status:'Approved', available:true}]);
       const [requests, setRequests] = useState([]);
       const [showEmergency, setShowEmergency] = useState(false);
       const [showAdminAuth, setShowAdminAuth] = useState(false);
@@ -38,60 +33,33 @@
       const [providerPhone, setProviderPhone] = useState('');
       const [currentProviderId, setCurrentProviderId] = useState(null);
       const [notifications, setNotifications] = useState([]);
-      const [emergencyData, setEmergencyData] = useState({issue:'', location:'', type:'roadside'});
+      const [emergencyData, setEmergencyData] = useState({issue:'', location:'', type:'roadside', customIssue:''});
 
       const addNotif = (msg) => setNotifications([{id:Date.now(), msg, time:new Date().toLocaleTimeString()}, ...notifications]);
 
       const submitEmergency = () => {
         if(!emergencyData.issue || !emergencyData.location) return alert('Fill all fields');
-        const req = {id:Date.now(), ...emergencyData, status:'Open', timestamp:new Date().toLocaleString()};
+        const finalIssue = emergencyData.issue === 'Other' ? emergencyData.customIssue : emergencyData.issue;
+        const req = {id:Date.now(), issue:finalIssue, location:emergencyData.location, type:emergencyData.type, status:'Open', timestamp:new Date().toLocaleString()};
         setRequests([req, ...requests]);
         addNotif('Emergency request submitted!');
         setShowEmergency(false);
-        setEmergencyData({issue:'', location:'', type:'roadside'});
+        setEmergencyData({issue:'', location:'', type:'roadside', customIssue:''});
       };
 
-      const loginAdmin = () => {
-        if(adminPin === '1234') {
-          setRole('admin');
-          setShowAdminAuth(false);
-        } else alert('Wrong PIN');
-      };
-
-      const loginProvider = () => {
-        const p = providers.find(x => x.phone === providerPhone && x.status === 'Approved');
-        if(p) {
-          setRole('provider');
-          setCurrentProviderId(p.id);
-          setShowProviderAuth(false);
-        } else alert('Provider not found');
-      };
-
-      const acceptRequest = (id) => {
-        setRequests(requests.map(r => r.id === id ? {...r, status:'In Progress', providerId:currentProviderId} : r));
-        addNotif('Request accepted!');
-      };
-
-      const completeRequest = (id) => {
-        setRequests(requests.map(r => r.id === id ? {...r, status:'Completed'} : r));
-        addNotif('Job completed!');
-      };
-
-      const toggleAvailable = () => {
-        setProviders(providers.map(p => p.id === currentProviderId ? {...p, available:!p.available} : p));
-      };
+      const loginAdmin = () => {if(adminPin === '1234') {setRole('admin'); setShowAdminAuth(false);} else alert('Wrong PIN');};
+      const loginProvider = () => {const p = providers.find(x => x.phone === providerPhone && x.status === 'Approved'); if(p) {setRole('provider'); setCurrentProviderId(p.id); setShowProviderAuth(false);} else alert('Provider not found');};
+      const acceptRequest = (id) => {setRequests(requests.map(r => r.id === id ? {...r, status:'In Progress', providerId:currentProviderId} : r)); addNotif('Request accepted!');};
+      const completeRequest = (id) => {setRequests(requests.map(r => r.id === id ? {...r, status:'Completed'} : r)); addNotif('Job completed!');};
+      const toggleAvailable = () => {setProviders(providers.map(p => p.id === currentProviderId ? {...p, available:!p.available} : p));};
 
       const currentProvider = providers.find(p => p.id === currentProviderId);
       const myJobs = requests.filter(r => r.providerId === currentProviderId);
 
       return (
         <div className="min-h-screen bg-gray-50 pb-20">
-          {/* HEADER */}
           <div className="bg-gradient-to-r from-black to-gray-900 border-b-4 border-yellow-500 p-6 text-center sticky top-0 z-50">
-            <h1 className="text-3xl font-black">
-              <span className="text-yellow-400">chap</span>
-              <span className="text-white">TAP</span>
-            </h1>
+            <h1 className="text-3xl font-black"><span className="text-yellow-400">chap</span><span className="text-white">TAP</span></h1>
             <p className="text-yellow-200 text-xs">Autofix - Premium Roadside Assistance</p>
             <div className="flex gap-2 justify-center mt-4">
               <button onClick={() => {setRole('user'); setView('home');}} className={`px-4 py-2 rounded font-bold text-xs ${role==='user'?'bg-yellow-500 text-black':'bg-gray-700 text-white'}`}>User</button>
@@ -102,187 +70,24 @@
           </div>
 
           <div className="max-w-md mx-auto p-4">
-            {/* USER VIEW */}
-            {role === 'user' && (
-              <>
-                {view === 'home' && (
-                  <div className="space-y-4">
-                    <button onClick={() => setShowEmergency(true)} className="w-full bg-red-600 text-white py-4 rounded-xl font-black text-lg"><Alert/> EMERGENCY HELP</button>
-                    <button onClick={() => setView('providers')} className="w-full bg-black text-yellow-400 py-4 rounded-xl font-black">⚫🟡 Find Providers</button>
-                    <button onClick={() => setView('requests')} className="w-full bg-purple-600 text-white py-3 rounded-xl font-bold">My Requests ({requests.length})</button>
-                  </div>
-                )}
-                {view === 'providers' && (
-                  <div className="space-y-4">
-                    <button onClick={() => setView('home')} className="text-blue-600 font-bold">← Back</button>
-                    <h2 className="text-2xl font-black">Service Providers</h2>
-                    {providers.filter(p => p.status === 'Approved').map(p => (
-                      <div key={p.id} className="bg-white p-4 rounded-xl shadow-lg">
-                        <div className="flex justify-between mb-2">
-                          <div>
-                            <div className="font-bold text-lg">{p.name}</div>
-                            <div className="text-sm text-gray-600"><Pin/> {p.location}</div>
-                            <div className="text-sm text-blue-600">{p.services.join(', ')}</div>
-                            <div className={`inline-block mt-1 px-2 py-1 rounded text-xs font-bold ${p.available?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{p.available?'Available':'Busy'}</div>
-                          </div>
-                          <div><Star/> {p.rating}</div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <a href={`tel:${p.phone}`} className="bg-blue-600 text-white py-2 rounded text-center"><Phone/> Call</a>
-                          <a href={`https://wa.me/${p.phone.replace(/^0/,'254')}`} target="_blank" className="bg-green-600 text-white py-2 rounded text-center"><Message/> WhatsApp</a>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {view === 'requests' && (
-                  <div className="space-y-4">
-                    <button onClick={() => setView('home')} className="text-blue-600 font-bold">← Back</button>
-                    <h2 className="text-2xl font-black">My Requests</h2>
-                    {requests.map(r => (
-                      <div key={r.id} className="bg-white p-4 rounded shadow">
-                        <div className="flex justify-between">
-                          <div>
-                            <div className="font-bold">{r.issue}</div>
-                            <div className="text-sm text-gray-600">{r.location}</div>
-                          </div>
-                          <div className={`px-2 py-1 rounded text-xs ${r.status==='Open'?'bg-yellow-100':'bg-green-100'}`}>{r.status}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
+            {role === 'user' && (<>{view === 'home' && (<div className="space-y-4"><button onClick={() => setShowEmergency(true)} className="w-full bg-red-600 text-white py-4 rounded-xl font-black text-lg"><Alert/> EMERGENCY HELP</button><button onClick={() => setView('providers')} className="w-full bg-black text-yellow-400 py-4 rounded-xl font-black">⚫🟡 Find Providers</button><button onClick={() => setView('requests')} className="w-full bg-purple-600 text-white py-3 rounded-xl font-bold">My Requests ({requests.length})</button></div>)}
+            {view === 'providers' && (<div className="space-y-4"><button onClick={() => setView('home')} className="text-blue-600 font-bold">← Back</button><h2 className="text-2xl font-black">Service Providers</h2>{providers.filter(p => p.status === 'Approved').map(p => (<div key={p.id} className="bg-white p-4 rounded-xl shadow-lg"><div className="flex justify-between mb-2"><div><div className="font-bold text-lg">{p.name}</div><div className="text-sm text-gray-600"><Pin/> {p.location}</div><div className="text-sm text-blue-600">{p.services.join(', ')}</div><div className={`inline-block mt-1 px-2 py-1 rounded text-xs font-bold ${p.available?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{p.available?'Available':'Busy'}</div></div><div><Star/> {p.rating}</div></div><div className="grid grid-cols-2 gap-2"><a href={`tel:${p.phone}`} className="bg-blue-600 text-white py-2 rounded text-center"><Phone/> Call</a><a href={`https://wa.me/${p.phone.replace(/^0/,'254')}`} target="_blank" className="bg-green-600 text-white py-2 rounded text-center"><Message/> WhatsApp</a></div></div>))}</div>)}
+            {view === 'requests' && (<div className="space-y-4"><button onClick={() => setView('home')} className="text-blue-600 font-bold">← Back</button><h2 className="text-2xl font-black">My Requests</h2>{requests.map(r => (<div key={r.id} className="bg-white p-4 rounded shadow"><div className="flex justify-between"><div><div className="font-bold">{r.issue}</div><div className="text-sm text-gray-600">{r.location}</div></div><div className={`px-2 py-1 rounded text-xs ${r.status==='Open'?'bg-yellow-100':'bg-green-100'}`}>{r.status}</div></div></div>))}</div>)}</>)}
 
-            {/* PROVIDER VIEW */}
-            {role === 'provider' && currentProvider && (
-              <>
-                {view === 'home' && (
-                  <div className="space-y-4">
-                    <div className="bg-green-600 text-white p-6 rounded-xl">
-                      <h2 className="text-2xl font-black">{currentProvider.name}</h2>
-                      <p className="text-sm">{currentProvider.location}</p>
-                      <button onClick={toggleAvailable} className={`mt-4 w-full py-3 rounded font-bold ${currentProvider.available?'bg-red-600':'bg-white text-green-700'}`}>
-                        <Toggle on={currentProvider.available}/> {currentProvider.available?'Go Offline':'Go Online'}
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-white p-4 rounded shadow"><div className="text-2xl font-bold text-blue-600">{myJobs.length}</div><div className="text-sm">Total Jobs</div></div>
-                      <div className="bg-white p-4 rounded shadow"><div className="text-2xl font-bold text-green-600">{myJobs.filter(j=>j.status==='Completed').length}</div><div className="text-sm">Completed</div></div>
-                    </div>
-                    <button onClick={() => setView('available')} className="w-full bg-blue-600 text-white py-3 rounded font-bold">Available Requests ({requests.filter(r=>r.status==='Open').length})</button>
-                    <button onClick={() => setView('myjobs')} className="w-full bg-green-600 text-white py-3 rounded font-bold">My Jobs ({myJobs.filter(j=>j.status==='In Progress').length})</button>
-                  </div>
-                )}
-                {view === 'available' && (
-                  <div className="space-y-4">
-                    <button onClick={() => setView('home')} className="text-blue-600 font-bold">← Back</button>
-                    <h2 className="text-2xl font-black">Available Requests</h2>
-                    {requests.filter(r => r.status === 'Open').map(r => (
-                      <div key={r.id} className="bg-white p-4 rounded shadow">
-                        <div className="font-bold">{r.issue}</div>
-                        <div className="text-sm text-gray-600">{r.location}</div>
-                        <button onClick={() => acceptRequest(r.id)} className="mt-2 w-full bg-green-600 text-white py-2 rounded font-bold">Accept</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {view === 'myjobs' && (
-                  <div className="space-y-4">
-                    <button onClick={() => setView('home')} className="text-blue-600 font-bold">← Back</button>
-                    <h2 className="text-2xl font-black">My Jobs</h2>
-                    {myJobs.filter(j => j.status === 'In Progress').map(r => (
-                      <div key={r.id} className="bg-white p-4 rounded shadow">
-                        <div className="font-bold">{r.issue}</div>
-                        <div className="text-sm text-gray-600">{r.location}</div>
-                        <button onClick={() => completeRequest(r.id)} className="mt-2 w-full bg-green-600 text-white py-2 rounded font-bold">Mark Complete</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
+            {role === 'provider' && currentProvider && (<>{view === 'home' && (<div className="space-y-4"><div className="bg-green-600 text-white p-6 rounded-xl"><h2 className="text-2xl font-black">{currentProvider.name}</h2><p className="text-sm">{currentProvider.location}</p><button onClick={toggleAvailable} className={`mt-4 w-full py-3 rounded font-bold ${currentProvider.available?'bg-red-600':'bg-white text-green-700'}`}><Toggle on={currentProvider.available}/> {currentProvider.available?'Go Offline':'Go Online'}</button></div><div className="grid grid-cols-2 gap-4"><div className="bg-white p-4 rounded shadow"><div className="text-2xl font-bold text-blue-600">{myJobs.length}</div><div className="text-sm">Total Jobs</div></div><div className="bg-white p-4 rounded shadow"><div className="text-2xl font-bold text-green-600">{myJobs.filter(j=>j.status==='Completed').length}</div><div className="text-sm">Completed</div></div></div><button onClick={() => setView('available')} className="w-full bg-blue-600 text-white py-3 rounded font-bold">Available Requests ({requests.filter(r=>r.status==='Open').length})</button><button onClick={() => setView('myjobs')} className="w-full bg-green-600 text-white py-3 rounded font-bold">My Jobs ({myJobs.filter(j=>j.status==='In Progress').length})</button></div>)}
+            {view === 'available' && (<div className="space-y-4"><button onClick={() => setView('home')} className="text-blue-600 font-bold">← Back</button><h2 className="text-2xl font-black">Available Requests</h2>{requests.filter(r => r.status === 'Open').map(r => (<div key={r.id} className="bg-white p-4 rounded shadow"><div className="font-bold">{r.issue}</div><div className="text-sm text-gray-600">{r.location}</div><button onClick={() => acceptRequest(r.id)} className="mt-2 w-full bg-green-600 text-white py-2 rounded font-bold">Accept</button></div>))}</div>)}
+            {view === 'myjobs' && (<div className="space-y-4"><button onClick={() => setView('home')} className="text-blue-600 font-bold">← Back</button><h2 className="text-2xl font-black">My Jobs</h2>{myJobs.filter(j => j.status === 'In Progress').map(r => (<div key={r.id} className="bg-white p-4 rounded shadow"><div className="font-bold">{r.issue}</div><div className="text-sm text-gray-600">{r.location}</div><button onClick={() => completeRequest(r.id)} className="mt-2 w-full bg-green-600 text-white py-2 rounded font-bold">Mark Complete</button></div>))}</div>)}</>)}
 
-            {/* ADMIN VIEW */}
-            {role === 'admin' && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-black">Admin Dashboard</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-blue-500 text-white p-4 rounded"><div className="text-2xl font-bold">{requests.length}</div><div className="text-sm">Total Requests</div></div>
-                  <div className="bg-green-500 text-white p-4 rounded"><div className="text-2xl font-bold">{providers.filter(p=>p.status==='Approved').length}</div><div className="text-sm">Providers</div></div>
-                </div>
-                <div className="bg-white p-4 rounded shadow">
-                  <h3 className="font-bold mb-2">All Requests</h3>
-                  {requests.map(r => (
-                    <div key={r.id} className="border-b py-2">
-                      <div className="font-semibold">{r.issue}</div>
-                      <div className="text-sm text-gray-600">{r.location} - {r.status}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {role === 'admin' && (<div className="space-y-4"><h2 className="text-2xl font-black">Admin Dashboard</h2><div className="grid grid-cols-2 gap-4"><div className="bg-blue-500 text-white p-4 rounded"><div className="text-2xl font-bold">{requests.length}</div><div className="text-sm">Total Requests</div></div><div className="bg-green-500 text-white p-4 rounded"><div className="text-2xl font-bold">{providers.filter(p=>p.status==='Approved').length}</div><div className="text-sm">Providers</div></div></div><div className="bg-white p-4 rounded shadow"><h3 className="font-bold mb-2">All Requests</h3>{requests.map(r => (<div key={r.id} className="border-b py-2"><div className="font-semibold">{r.issue}</div><div className="text-sm text-gray-600">{r.location} - {r.status}</div></div>))}</div></div>)}
           </div>
 
-          {/* EMERGENCY MODAL */}
-          {showEmergency && (
-            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-xl p-6 max-w-md w-full">
-                <h3 className="text-xl font-bold mb-4"><Alert/> Emergency Request</h3>
-                <select value={emergencyData.issue} onChange={e => setEmergencyData({...emergencyData, issue:e.target.value})} className="w-full p-3 border rounded mb-3">
-                  <option value="">Select issue...</option>
-                  <option>Engine Problem</option>
-                  <option>Battery Dead</option>
-                  <option>Flat Tyre</option>
-                  <option>Out of Fuel</option>
-                </select>
-                <textarea value={emergencyData.location} onChange={e => setEmergencyData({...emergencyData, location:e.target.value})} placeholder="Describe location..." className="w-full p-3 border rounded mb-3" rows="3"/>
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <button onClick={() => setEmergencyData({...emergencyData, type:'roadside'})} className={`p-2 rounded border-2 ${emergencyData.type==='roadside'?'bg-yellow-500 border-yellow-600':'border-gray-300'}`}>🛣️ Roadside</button>
-                  <button onClick={() => setEmergencyData({...emergencyData, type:'home'})} className={`p-2 rounded border-2 ${emergencyData.type==='home'?'bg-yellow-500 border-yellow-600':'border-gray-300'}`}>🏠 Home</button>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={submitEmergency} className="bg-red-600 text-white py-2 rounded font-bold">Submit</button>
-                  <button onClick={() => setShowEmergency(false)} className="bg-gray-300 py-2 rounded font-bold">Cancel</button>
-                </div>
-              </div>
-            </div>
-          )}
+          {showEmergency && (<div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50"><div className="bg-white rounded-xl p-6 max-w-md w-full"><h3 className="text-xl font-bold mb-4"><Alert/> Emergency Request</h3><select value={emergencyData.issue} onChange={e => setEmergencyData({...emergencyData, issue:e.target.value})} className="w-full p-3 border rounded mb-3"><option value="">Select issue...</option><option>Engine Problem</option><option>Battery Dead</option><option>Flat Tyre</option><option>Out of Fuel</option><option>Accident</option><option>Towing Needed</option><option>Mechanical Issue</option><option>Electrical Problem</option><option>Other</option></select>{emergencyData.issue === 'Other' && (<input type="text" placeholder="Please specify your issue..." onChange={e => setEmergencyData({...emergencyData, customIssue:e.target.value})} className="w-full p-3 border rounded mb-3"/>)}<textarea value={emergencyData.location} onChange={e => setEmergencyData({...emergencyData, location:e.target.value})} placeholder="Describe location..." className="w-full p-3 border rounded mb-3" rows="3"/><div className="grid grid-cols-2 gap-2 mb-3"><button onClick={() => setEmergencyData({...emergencyData, type:'roadside'})} className={`p-2 rounded border-2 ${emergencyData.type==='roadside'?'bg-yellow-500 border-yellow-600':'border-gray-300'}`}>🛣️ Roadside</button><button onClick={() => setEmergencyData({...emergencyData, type:'home'})} className={`p-2 rounded border-2 ${emergencyData.type==='home'?'bg-yellow-500 border-yellow-600':'border-gray-300'}`}>🏠 Home</button></div><div className="grid grid-cols-2 gap-2"><button onClick={submitEmergency} className="bg-red-600 text-white py-2 rounded font-bold">Submit</button><button onClick={() => setShowEmergency(false)} className="bg-gray-300 py-2 rounded font-bold">Cancel</button></div></div></div>)}
 
-          {/* ADMIN AUTH */}
-          {showAdminAuth && (
-            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-xl p-6 max-w-sm w-full">
-                <h3 className="text-xl font-bold mb-4">Admin Login</h3>
-                <input type="password" placeholder="PIN (1234)" value={adminPin} onChange={e => setAdminPin(e.target.value)} className="w-full p-3 border rounded mb-4"/>
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={loginAdmin} className="bg-blue-600 text-white py-2 rounded font-bold">Login</button>
-                  <button onClick={() => setShowAdminAuth(false)} className="bg-gray-300 py-2 rounded font-bold">Cancel</button>
-                </div>
-              </div>
-            </div>
-          )}
+          {showAdminAuth && (<div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50"><div className="bg-white rounded-xl p-6 max-w-sm w-full"><h3 className="text-xl font-bold mb-4">Admin Login</h3><input type="password" placeholder="PIN (1234)" value={adminPin} onChange={e => setAdminPin(e.target.value)} className="w-full p-3 border rounded mb-4"/><div className="grid grid-cols-2 gap-2"><button onClick={loginAdmin} className="bg-blue-600 text-white py-2 rounded font-bold">Login</button><button onClick={() => setShowAdminAuth(false)} className="bg-gray-300 py-2 rounded font-bold">Cancel</button></div></div></div>)}
 
-          {/* PROVIDER AUTH */}
-          {showProviderAuth && (
-            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-xl p-6 max-w-sm w-full">
-                <h3 className="text-xl font-bold mb-4">Provider Login</h3>
-                <input type="tel" placeholder="Phone (0721122334)" value={providerPhone} onChange={e => setProviderPhone(e.target.value)} className="w-full p-3 border rounded mb-4"/>
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={loginProvider} className="bg-green-600 text-white py-2 rounded font-bold">Login</button>
-                  <button onClick={() => setShowProviderAuth(false)} className="bg-gray-300 py-2 rounded font-bold">Cancel</button>
-                </div>
-              </div>
-            </div>
-          )}
+          {showProviderAuth && (<div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50"><div className="bg-white rounded-xl p-6 max-w-sm w-full"><h3 className="text-xl font-bold mb-4">Provider Login</h3><input type="tel" placeholder="Phone (0721122334)" value={providerPhone} onChange={e => setProviderPhone(e.target.value)} className="w-full p-3 border rounded mb-4"/><div className="grid grid-cols-2 gap-2"><button onClick={loginProvider} className="bg-green-600 text-white py-2 rounded font-bold">Login</button><button onClick={() => setShowProviderAuth(false)} className="bg-gray-300 py-2 rounded font-bold">Cancel</button></div></div></div>)}
 
-          {/* FOOTER */}
-          <div className="bg-gradient-to-r from-black to-gray-900 border-t-4 border-yellow-500 p-4 text-center fixed bottom-0 left-0 right-0">
-            <p className="font-black text-yellow-400">⚫🟡 chapTAP Autofix</p>
-            <p className="text-xs text-yellow-200">📞 support@chaptapautofix.co.ke</p>
-          </div>
+          <div className="bg-gradient-to-r from-black to-gray-900 border-t-4 border-yellow-500 p-4 text-center fixed bottom-0 left-0 right-0"><p className="font-black text-yellow-400">⚫🟡 chapTAP Autofix</p><p className="text-xs text-yellow-200">📞 support@chaptapautofix.co.ke</p></div>
         </div>
       );
     };
