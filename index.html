@@ -1,149 +1,178 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>chapTAP Autofix</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>body{padding-bottom:100px}</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>chapTAP Autofix</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>body{padding-bottom:100px}</style>
 </head>
 
 <body class="bg-gray-50">
-<!-- UI CONTENT UNCHANGED -->
-<!-- (everything above Firebase remains EXACTLY the same as you sent) -->
 
-<!-- Firebase SDK -->
+<!-- HEADER -->
+<div class="bg-gradient-to-r from-black to-gray-900 border-b-4 border-yellow-500 p-6 text-center sticky top-0 z-50">
+  <h1 class="text-3xl font-black">
+    <span class="text-yellow-400">chap</span><span class="text-white">TAP</span>
+  </h1>
+  <p class="text-yellow-200 text-xs">Autofix - Premium Roadside Assistance</p>
+  <p id="gps" class="text-green-400 text-xs mt-1 hidden">📍 GPS Active</p>
+
+  <div class="flex gap-2 justify-center mt-4">
+    <button onclick="setRole('user')" id="ru" class="px-4 py-2 rounded font-bold text-xs bg-yellow-500 text-black">User</button>
+    <button onclick="setRole('provider')" id="rp" class="px-4 py-2 rounded font-bold text-xs bg-gray-700 text-white">Provider</button>
+    <button onclick="setRole('admin')" id="ra" class="px-4 py-2 rounded font-bold text-xs bg-gray-700 text-white">Admin</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="max-w-md mx-auto p-4">
+
+  <!-- USER -->
+  <div id="user">
+    <div id="uh" class="space-y-4">
+      <div id="ld" class="bg-green-50 border-l-4 border-green-500 p-3 rounded hidden">
+        <p class="text-sm font-bold text-green-800">📍 Your Location</p>
+        <p id="co" class="text-xs text-green-700"></p>
+      </div>
+
+      <button onclick="getLoc()" id="lb" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">
+        📍 Use My Location
+      </button>
+
+      <button onclick="show('pv')" class="w-full bg-black text-yellow-400 py-4 rounded-xl font-black">
+        ⚫🟡 Find Providers
+      </button>
+
+      <button onclick="show('ur')" class="w-full bg-purple-600 text-white py-3 rounded-xl font-bold">
+        My Requests (<span id="urc">0</span>)
+      </button>
+    </div>
+
+    <div id="pv" class="space-y-4 hidden">
+      <button onclick="show('uh')" class="text-blue-600 font-bold">← Back</button>
+      <h2 class="text-2xl font-black">Providers</h2>
+      <div id="pl"></div>
+    </div>
+
+    <div id="ur" class="space-y-4 hidden">
+      <button onclick="show('uh')" class="text-blue-600 font-bold">← Back</button>
+      <h2 class="text-2xl font-black">My Requests</h2>
+      <div id="url"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="bg-gradient-to-r from-black to-gray-900 border-t-4 border-yellow-500 p-4 text-center fixed bottom-0 left-0 right-0">
+  <p class="font-black text-yellow-400">⚫🟡 chapTAP Autofix</p>
+  <p class="text-xs text-yellow-200">📞 support@chaptapautofix.co.ke</p>
+</div>
+
+<!-- FIREBASE -->
 <script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import {
-  getFirestore, collection, addDoc, onSnapshot,
-  updateDoc, doc, deleteDoc, query, orderBy
-} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyC9bElB729BAemQgyloqaFSXOZhgqYjeFY",
-  authDomain: "chaptap-autofix.firebaseapp.com",
-  projectId: "chaptap-autofix",
-  storageBucket: "chaptap-autofix.firebasestorage.app",
-  messagingSenderId: "844892869830",
-  appId: "1:844892869830:web:17a305b33d0679a068b3c7"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyC9bElB729BAemQgyloqaFSXOZhgqYjeFY",
+    authDomain: "chaptap-autofix.firebaseapp.com",
+    projectId: "chaptap-autofix"
+  };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-window.db = db;
-window.collection = collection;
-window.addDoc = addDoc;
-window.onSnapshot = onSnapshot;
-window.updateDoc = updateDoc;
-window.doc = doc;
-window.deleteDoc = deleteDoc;
-window.query = query;
-window.orderBy = orderBy;
+  window.db = db;
+  window.collection = collection;
+  window.addDoc = addDoc;
+  window.onSnapshot = onSnapshot;
 
-console.log('✅ Firebase connected!');
+  console.log("✅ Firebase connected");
+  window.initApp();
 </script>
 
 <script>
-let role='user',loc=null,type='roadside',pid=null,notifs=[],reqs=[],provs=[];
+/* ========= GLOBALS ========= */
+let role = "user";
+let loc = null;
+let provs = [];
+let reqs = [];
 
-window.initApp=function(){
-  onSnapshot(collection(db,'providers'),s=>{
-    provs=[];s.forEach(d=>provs.push({docId:d.id,...d.data()}));
-    updateAllCounts();
+/* ========= REQUIRED FIXES ========= */
+function getLoc(){
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(p=>{
+    loc={lat:p.coords.latitude,lng:p.coords.longitude};
+    document.getElementById("co").textContent =
+      `Lat: ${loc.lat.toFixed(4)}, Lng: ${loc.lng.toFixed(4)}`;
+    document.getElementById("ld").classList.remove("hidden");
+    document.getElementById("gps").classList.remove("hidden");
+    document.getElementById("lb").classList.add("hidden");
   });
-  onSnapshot(query(collection(db,'requests'),orderBy('timestamp','desc')),s=>{
-    reqs=[];s.forEach(d=>reqs.push({docId:d.id,...d.data()}));
-    updateAllCounts();
+}
+
+function updateAllCounts(){
+  document.getElementById("urc").textContent = reqs.length;
+}
+
+/* ========= APP INIT ========= */
+window.initApp = function(){
+  onSnapshot(collection(db,"providers"), snap=>{
+    provs=[];
+    snap.forEach(d=>provs.push(d.data()));
+    renderP();
   });
-  getLoc();
+
+  onSnapshot(collection(db,"requests"), snap=>{
+    reqs=[];
+    snap.forEach(d=>reqs.push(d.data()));
+    updateAllCounts();
+    renderUR();
+  });
 };
 
-window.addEventListener('load',()=>window.initApp());
+/* ========= UI ========= */
+function setRole(r){
+  role=r;
+  document.getElementById("user").classList.toggle("hidden",r!=="user");
+}
 
 function show(id){
-  document.querySelectorAll('#user>div,#provider>div,#admin>div')
-    .forEach(e=>e.classList.add('hidden'));
-  document.getElementById(id).classList.remove('hidden');
-  if(id==='pv')renderP();
-  if(id==='ur')renderUR();
-  if(id==='ar')renderAR();
-  if(id==='mj')renderMJ();
+  ["uh","pv","ur"].forEach(x=>document.getElementById(x).classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
 }
 
 function renderP(){
-  const l=document.getElementById('pl');l.innerHTML='';
-  provs.filter(p=>p.status==='Approved').forEach(p=>{
+  const l=document.getElementById("pl");
+  l.innerHTML="";
+  provs.forEach(p=>{
     l.innerHTML+=`
-    <div class="bg-white p-4 rounded-xl shadow-lg mb-3">
-      <div class="font-bold text-lg">${p.name}</div>
-      <div class="text-sm text-gray-600">${p.location}</div>
-    </div>`;
+      <div class="bg-white p-4 rounded shadow mb-3">
+        <div class="font-bold">${p.name||"Garage"}</div>
+        <div class="text-sm">${p.location||"Mombasa"}</div>
+      </div>`;
   });
 }
 
 function renderUR(){
-  const l=document.getElementById('url');
+  const l=document.getElementById("url");
   if(reqs.length===0){
-    l.innerHTML='<p class="text-gray-500 text-center py-8">No requests yet</p>';return;
+    l.innerHTML="<p class='text-gray-500 text-center'>No requests</p>";
+    return;
   }
-  l.innerHTML='';
+  l.innerHTML="";
   reqs.forEach(r=>{
     l.innerHTML+=`
-    <div class="bg-white p-4 rounded shadow mb-3">
-      <div class="font-bold">${r.issue}</div>
-      <div class="text-sm text-gray-600">${r.location}</div>
-      <div class="text-xs">${r.status}</div>
-    </div>`;
+      <div class="bg-white p-4 rounded shadow mb-2">
+        <div class="font-bold">${r.issue}</div>
+        <div class="text-sm">${r.location}</div>
+      </div>`;
   });
-}
-
-function renderAR(){
-  const l=document.getElementById('arl'),
-  or=reqs.filter(r=>r.status==='Open');
-  if(or.length===0){
-    l.innerHTML='<p class="text-gray-500 text-center py-8">No requests</p>';return;
-  }
-  l.innerHTML='';
-  or.forEach(r=>{
-    l.innerHTML+=`
-    <div class="bg-white p-4 rounded shadow mb-3">
-      <div class="font-bold">${r.issue}</div>
-      <div class="text-sm text-gray-600">${r.location}</div>
-      <button onclick="accept('${r.docId}')" class="mt-2 w-full bg-green-600 text-white py-2 rounded font-bold">Accept</button>
-    </div>`;
-  });
-}
-
-function renderMJ(){
-  const l=document.getElementById('mjl'),
-  mj=reqs.filter(r=>r.providerId===pid&&r.status==='In Progress');
-  if(mj.length===0){
-    l.innerHTML='<p class="text-gray-500 text-center py-8">No jobs</p>';return;
-  }
-  l.innerHTML='';
-  mj.forEach(r=>{
-    l.innerHTML+=`
-    <div class="bg-white p-4 rounded shadow mb-3">
-      <div class="font-bold">${r.issue}</div>
-      <div class="text-sm text-gray-600">${r.location}</div>
-      <button onclick="complete('${r.docId}')" class="mt-2 w-full bg-green-600 text-white py-2 rounded font-bold">Mark Complete</button>
-    </div>`;
-  });
-}
-
-async function accept(id){
-  await updateDoc(doc(db,'requests',id),{status:'In Progress',providerId:pid});
-  renderAR();
-}
-
-async function complete(id){
-  await updateDoc(doc(db,'requests',id),{status:'Completed'});
-  renderMJ();
 }
 </script>
 
 </body>
-</html>                                                                                                                                                                                                                                                                                                                                           
+</html>
 
